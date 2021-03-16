@@ -1,3 +1,15 @@
+"""
+In this work we present a 
+
+- model-free
+- off-policy 
+- actor-critic algorithm 
+
+using deep function approximators that can learn policies in high-dimensional, continuous action spaces.
+
+"""
+
+
 from __future__ import division
 
 import os
@@ -18,16 +30,21 @@ import numpy as np
 import math
 import model
 
-BATCH_SIZE = 128
-LEARNING_RATE = 0.001
-GAMMA = 0.99
-TAU = 0.001
-EPS = 0.003
+BATCH_SIZE = 128        # Input Batch size
+LEARNING_RATE = 0.001	# Initial Learning Rate
+GAMMA = 0.99		# value of future reward
+TAU = 0.001		# for soft update of target parameters
+EPS = 0.003		# output action is randomly selected
 
+
+
+# fanin_init is the function perfmorming normalization
 def fanin_init(size, fanin=None):
 	fanin = fanin or size[0]
 	v = 1. / np.sqrt(fanin)
 	return torch.Tensor(size).uniform_(-v, v)
+
+
 
 class Critic(nn.Module):
 
@@ -42,20 +59,27 @@ class Critic(nn.Module):
 		self.state_dim = state_dim
 		self.action_dim = action_dim
 
+		
+		# Creating the Critic network states of size [state dim input, 256, 128,]
 		self.fcs1 = nn.Linear(state_dim,256)
-		self.fcs1.weight.data = fanin_init(self.fcs1.weight.data.size())
+		self.fcs1.weight.data = fanin_init(self.fcs1.weight.data.size()) #initializing random normalized weights for states network [layer1]
 		self.fcs2 = nn.Linear(256,128)
-		self.fcs2.weight.data = fanin_init(self.fcs2.weight.data.size())
+		self.fcs2.weight.data = fanin_init(self.fcs2.weight.data.size()) #initializing random normalized weights for states network [layer2]
 
+		# Creating the Critic network actions of size [action dim input, 128]
 		self.fca1 = nn.Linear(action_dim,128)
-		self.fca1.weight.data = fanin_init(self.fca1.weight.data.size())
+		self.fca1.weight.data = fanin_init(self.fca1.weight.data.size()) #initializing random normalized weights for actions network [layer1]
 
+		# creating Dense layers for final prediction of size [256, 128, 1]
 		self.fc2 = nn.Linear(256,128)
-		self.fc2.weight.data = fanin_init(self.fc2.weight.data.size())
+		self.fc2.weight.data = fanin_init(self.fc2.weight.data.size()) #initializing dense layer random normalized weights
 
 		self.fc3 = nn.Linear(128,1)
-		self.fc3.weight.data.uniform_(-EPS,EPS)
+		self.fc3.weight.data.uniform_(-EPS,EPS) 	# for some reason, weights in this layer initialized between -epsilon and +epsilon
 
+		
+	# implement the model structure
+	
 	def forward(self, state, action):
 		"""
 		returns Value function Q(s,a) obtained from critic network
@@ -68,7 +92,7 @@ class Critic(nn.Module):
 		a1 = F.relu(self.fca1(action))
 		x = torch.cat((s2,a1),dim=1)
 
-		x = F.relu(self.fc2(x))
+		x = F.relu(self.fc2(x))		#using relu activation for the critic (model for regression)
 		x = self.fc3(x)
 
 		return x
@@ -89,18 +113,22 @@ class Actor(nn.Module):
 		self.action_dim = action_dim
 		self.action_lim = action_lim
 
+		# network dim [state dim, 256, 128, 64, action dim]
+		
 		self.fc1 = nn.Linear(state_dim,256)
-		self.fc1.weight.data = fanin_init(self.fc1.weight.data.size())
+		self.fc1.weight.data = fanin_init(self.fc1.weight.data.size()) #initializing random normalized weights for states network [layer1]
 
 		self.fc2 = nn.Linear(256,128)
-		self.fc2.weight.data = fanin_init(self.fc2.weight.data.size())
+		self.fc2.weight.data = fanin_init(self.fc2.weight.data.size()) #initializing random normalized weights for actions network [layer1]
 
 		self.fc3 = nn.Linear(128,64)
-		self.fc3.weight.data = fanin_init(self.fc3.weight.data.size())
+		self.fc3.weight.data = fanin_init(self.fc3.weight.data.size()) #initializing random normalized weights for actions network [layer1]
 
 		self.fc4 = nn.Linear(64,action_dim)
 		self.fc4.weight.data.uniform_(0,1)
 
+		
+	# implement the model structure
 	def forward(self, state):
 		"""
 		returns policy function Pi(s) obtained from actor network
@@ -113,10 +141,20 @@ class Actor(nn.Module):
 		x = F.relu(self.fc1(state))
 		x = F.relu(self.fc2(x))
 		x = F.relu(self.fc3(x))
-		action = F.sigmoid(self.fc4(x))
+		action = F.sigmoid(self.fc4(x))		#using sigmoid activation for the actor (model for classification)
 
 		return action
 
+	
+	
+'''	
+Directly implementing Q learning with neural networks proved to be unstable in many
+environments. Since the network being updated is also used in calculating the target
+value, the Q update is prone to divergence. Our solution is modified for actor-critic and using “soft” target updates, rather than
+directly copying the weights. We create a copy of the actor and critic networks that are used for calculating the target values.
+'''	
+
+# Soft update is used for optimizing the model
 def soft_update(target, source, tau):
 	"""
 	Copies the parameters from source network (x) to target network (y) using the below update
@@ -131,6 +169,7 @@ def soft_update(target, source, tau):
 		)
 
 
+# Hard update is used to load the model		
 def hard_update(target, source):
 	"""
 	Copies the parameters from source network to target network
@@ -142,6 +181,7 @@ def hard_update(target, source):
 			target_param.data.copy_(param.data)
 
 
+# checkpoints to keep track of state, best action/reward and episode number
 def save_training_checkpoint(state, is_best, episode_count):
 	"""
 	Saves the models, with all training parameters intact
