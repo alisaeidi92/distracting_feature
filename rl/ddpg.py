@@ -197,6 +197,20 @@ def save_training_checkpoint(state, is_best, episode_count):
 
 
 # Based on http://math.stackexchange.com/questions/1287634/implementing-ornstein-uhlenbeck-in-matlab
+
+'''
+Added exploration noise. In the literature, they use the Ornstein-Uhlenbeck stochastic process for control tasks that deal with momentum
+'''
+
+'''
+The Ornstein–Uhlenbeck process is a stationary Gauss–Markov process, which means that it is a Gaussian process, a Markov process, and is temporally homogeneous. 
+In fact, it is the only nontrivial process that satisfies these three conditions, up to allowing linear transformations of the space and time variables.
+Over time, the process tends to drift towards its mean function: such a process is called mean-reverting.
+
+The process can be considered to be a modification of the random walk in continuous time, or Wiener process, in which the properties of the process have been changed 
+so that there is a tendency of the walk to move back towards a central location, with a greater attraction when the process is further away from the center. 
+The Ornstein–Uhlenbeck process can also be considered as the continuous-time analogue of the discrete-time process.
+'''
 class OrnsteinUhlenbeckActionNoise:
 
 	def __init__(self, action_dim, mu = 0, theta = 0.15, sigma = 0.2):
@@ -243,6 +257,8 @@ class Trainer:
 		hard_update(self.target_actor, self.actor)
 		hard_update(self.target_critic, self.critic)
 
+		
+		
 	def get_exploitation_action(self, state,alpha_1):
 		"""
 		gets the action from target actor added with exploration noise
@@ -287,6 +303,7 @@ class Trainer:
 		# y_pred = Q( s1, a1)
 		y_predicted = torch.squeeze(self.critic.forward(s1, a1))
 		# compute critic loss, and update the critic
+		# Update critic by minimizing the loss
 		loss_critic = F.smooth_l1_loss(y_predicted, y_expected)
 		self.critic_optimizer.zero_grad()
 		loss_critic.backward()
@@ -329,6 +346,21 @@ class Trainer:
 		hard_update(self.target_critic, self.critic)
 		print ('Models loaded succesfully')
 
+## Replay Buffer		
+		
+'''
+One challenge when using neural networks for reinforcement learning is that most optimization algorithms assume that the samples are independently and identically distributed. 
+Obviously, when the samples are generated from exploring sequentially in an environment this assumption no longer
+holds. Additionally, to make efficient use of hardware optimizations, it is essential to learn in minibatches, rather than online.
+
+As in DQN, we used a replay buffer to address these issues. The replay buffer is a finite sized cache
+R. Transitions were sampled from the environment according to the exploration policy and the tuple
+(st, at, rt, st+1) was stored in the replay buffer. When the replay buffer was full the oldest samples
+were discarded. At each timestep the actor and critic are updated by sampling a minibatch uniformly
+from the buffer. Because DDPG is an off-policy algorithm, the replay buffer can be large, allowing
+the algorithm to benefit from learning across a set of uncorrelated transitions.
+
+'''			
 class MemoryBuffer:
 
 	def __init__(self, size):
@@ -379,10 +411,10 @@ if __name__ == '__main__':
 	# env = gym.make('BipedalWalker-v2')
 	env = gym.make('Pendulum-v0')
 
-	MAX_EPISODES = 5000
-	MAX_STEPS = 1000
-	MAX_BUFFER = 1000000
-	MAX_TOTAL_REWARD = 300
+	MAX_EPISODES = 5000				# Number of episodes
+	MAX_STEPS = 1000				# Max steps at each episode to update
+	MAX_BUFFER = 1000000				# Max memory size
+	MAX_TOTAL_REWARD = 300				# Not used
 	S_DIM = env.observation_space.shape[0]
 	A_DIM = env.action_space.shape[0]
 	A_MAX = env.action_space.high[0]
@@ -391,8 +423,8 @@ if __name__ == '__main__':
 	print (' Action Dimensions :- ', A_DIM)
 	print (' Action Max :- ', A_MAX)
 
-	ram = MemoryBuffer(MAX_BUFFER)
-	trainer = Trainer(S_DIM, A_DIM, A_MAX, ram)
+	ram = MemoryBuffer(MAX_BUFFER)			#reply buffer
+	trainer = Trainer(S_DIM, A_DIM, A_MAX, ram)	#trainer based on state, action space and memory
 
 	for _ep in range(MAX_EPISODES):
 		observation = env.reset()
@@ -400,8 +432,12 @@ if __name__ == '__main__':
 		for r in range(MAX_STEPS):
 			env.render()
 			state = np.float32(observation)
-
-			action = trainer.get_exploration_action(state)
+			
+			
+			#Select action at = µ(st|θµ) + Nt according to the current policy and exploration noise
+			action = trainer.get_exploration_action(state)		
+			
+			
 			# if _ep%5 == 0:
 			# 	# validate every 5th episode
 			# 	action = trainer.get_exploitation_action(state)
@@ -409,20 +445,25 @@ if __name__ == '__main__':
 			# 	# get action based on observation, use exploration policy here
 			# 	action = trainer.get_exploration_action(state)
 
-			new_observation, reward, done, info = env.step(action)
+			
+			# Execute action at and observe reward rt and observe new state st+1
+			new_observation, reward, done, info = env.step(action) 
+
 
 			# # dont update if this is validation
 			# if _ep%50 == 0 or _ep>450:
 			# 	continue
 
-			if done:
+			
+			
+			if done: 					# if we're done with all the episodes, there's nothing to do
 				new_state = None
-			else:
+			else:						#else, save the current s, a, r, st+1 and create a new state)
 				new_state = np.float32(new_observation)
 				# push this exp in ram
-				ram.add(state, action, reward, new_state)
+				ram.add(state, action, reward, new_state) # Store transition (st, at, rt, st+1) in R
 
-			observation = new_observation
+			observation = new_observation			#update the observation based on the current action
 
 			# perform optimization
 			trainer.optimize()
