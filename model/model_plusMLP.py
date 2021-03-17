@@ -3,6 +3,8 @@ import torch.nn.functional as F
 
 from torch import nn
 
+# WRen model
+
 class WildRelationNet(nn.Module):
     def __init__(self):
         super(WildRelationNet, self).__init__()

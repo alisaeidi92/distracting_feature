@@ -3,7 +3,7 @@ import torch.nn.functional as F
 
 from torch import nn
 
-# this is the two stream logic embedding network
+# T-LEN model (2 stream logic embedding network)
 
 class esem(nn.Module):
     def __init__(self):
