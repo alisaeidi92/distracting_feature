@@ -34,7 +34,7 @@ for y in range(3):
             img_panel.place(x = x_positions[x], y = y_positions[y])
             
 
-# ----------- SCORE FRAME -----------
+# ----------- SCORE FRAME ----------- 
 score_frame = tk.LabelFrame(window, text='Scores', font=('Helvatical bold', 24), height=400, width=380, bg='#e9f5ff', padx=10, pady=10)
 score_frame.grid(row=0, column=1, padx=10, pady=10)
 
