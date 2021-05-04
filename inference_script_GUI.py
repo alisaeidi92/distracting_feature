@@ -4,21 +4,29 @@ import numpy as np
 from PIL import ImageTk, Image
 import requests
 import os
-
+import torchvision.models as models
+#from model.model_b3_p import Reab3p16
+import model_adjusted.model_b3_p as m
+import torch 
+import os
+import tensorflow as tf 
+import argparse
+import zipfile
 
 def update_choice(v):
     global choice
     choice= v.get()
     print(v.get())
 
-def get_next_question(window, human_correct, human_total, target, v, RAVEN_folder, file, file_number):
-    file_type = ["test"]
+def get_next_question(window, human_correct, human_total, target, v, RAVEN_folder, file, file_number, ai_correct, ai_total, ai_choice):
+    file_type = ["train", "test", "val"]
     
-    file = "RAVEN_"+str(file_number)+"_"+file_type[0]+".npz"
+#    file = "RAVEN_"+str(file_number)+"_"+file_type[0]+".npz"
     
     exists = False
     for i in range(3):
         file = "RAVEN_"+str(file_number)+"_"+file_type[i]+".npz"
+        file_folder = "RAVEN_"+str(file_number)+"_"+file_type[i]
         if os.path.exists(os.path.join(RAVEN_folder, file)):
             break
         
@@ -26,7 +34,9 @@ def get_next_question(window, human_correct, human_total, target, v, RAVEN_folde
     file_number = file_number+1
     global choice
     choice = v
-    print(choice)
+    print("human choice:", choice)
+    print()
+    
     if target==choice:
         human_correct = human_correct + 1
     human_total = human_total + 1
@@ -36,12 +46,9 @@ def get_next_question(window, human_correct, human_total, target, v, RAVEN_folde
     window = tk.Tk()
 
     window.title('Visual IQ Test')
-    window.geometry('1000x600')
+    window.geometry('1200x600')
     window.configure(bg='#e9f5ff')
     window.resizable(False, False)      # make window non-resizable
-
-    ai_total = 0
-    ai_correct = 0
 
 
 
@@ -53,8 +60,8 @@ def get_next_question(window, human_correct, human_total, target, v, RAVEN_folde
     npz_file = np.load(os.path.join(RAVEN_folder,file))
     npz_subfile_image = npz_file["image"]
     npz_subfile_target = npz_file["target"]
-    target = npz_subfile_target
-    print(target)
+    target = npz_subfile_target +1
+    print("correct answer:", target)
 
     #---------------------------------------------
 
@@ -89,18 +96,85 @@ def get_next_question(window, human_correct, human_total, target, v, RAVEN_folde
             img_position = img_position+1
     img_position = img_position-1            
 
+    
+    # -model----
+    ##--model testing
+
+
+    
+    model_path = "C:\\Users\\Hertz\\Documents\\SJSU Coursework\\MS Project_big files\\git\\distracting_feature\\distracting_feature\\epochs\\epochbest"
+
+    #image_path = "C:\\Users\\sonam\\Desktop\\MS_Project\\test_model\\RAVEN_1368_test\\image.npy"
+    image_path = os.path.join(RAVEN_folder, file_folder)
+    ap = argparse.ArgumentParser()
+    #ap.add_argument("type_loss", type=bool)
+    #ap.add_argument("image_path", type=str)
+    ap.add_argument('--type_loss', type=bool, default=False)
+    ap.add_argument('--image_path', type=str,default= image_path)
+    args = ap.parse_args()
+
+
+    data = npz_subfile_image
+
+    #data = np.load(image_path)
+    data = data.reshape(1, 16, 160, 160)/255
+    #print(data.shape)
+
+    data = data.astype(np.float32)
+
+
+
+    data = torch.from_numpy(data)
+    device = torch.device('cpu')
+    r_model = m.Reab3p16(args)
+    r_model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')), strict=False)
+    r_model.eval()
+    value = r_model(data)
+
+    ##print(value[0])
+    tup1=value[0][0]
+    tup2=value[0][1]
+    tup3=value[0][2]
+    tup4=value[0][3]
+    tup5=value[0][4]
+    tup6=value[0][5]
+    tup7=value[0][6]
+    tup8=value[0][7]
+
+    prob_list =[tup1.item(),tup2.item(),tup3.item(),tup4.item(),tup5.item(),tup6.item(),tup7.item(),tup8.item()]
+    ##print ("list:", prob_list)
+
+    max_prob = max(prob_list)  #Return the max value of the list.
+    max_index = prob_list.index(max_prob)
+    ai_choice = max_index + 1
+    print("ai choice value:", ai_choice)
+
     # ----------- SCORE FRAME ----------- 
     ai_total=ai_total+1
     if human_total!=0:
+        if (choice==target):
+            human_correct = human_correct+1
         human_score = human_correct/human_total
     else:
         human_score = ""
     if ai_total!=0:
-        if (choice_val == target):
+        if (ai_choice == target):
             ai_correct=ai_correct+1
         ai_score = ai_correct/ai_total
     else:
         ai_score = ""
+#    # ----------- SCORE FRAME ----------- 
+#    ai_total=ai_total+1
+#    if human_total!=0:
+#        human_score = human_correct/human_total
+#    else:
+#        human_score = ""
+#    if ai_total!=0:
+#        if (choice_val == target):
+#            ai_correct=ai_correct+1
+#        ai_score = ai_correct/ai_total
+#    else:
+#        ai_score = ""
 
 
     score_frame = tk.LabelFrame(window, text='Scores', font=('Helvatical bold', 24), height=400, width=380, bg='#e9f5ff', padx=10, pady=10)
@@ -115,7 +189,7 @@ def get_next_question(window, human_correct, human_total, target, v, RAVEN_folde
     score2 = tk.Label(score_frame, text = 'AI: '+str(ai_score), bg='#e9f5ff', font=('Helvatical bold', 20))
     score2.place(x = 0, y = 35)
 
-    button = tk.Button(score_frame, text='Next question ->', font=('Helvatical bold', 18), highlightbackground='#E9F5FF', padx=5, pady=5, command=lambda: get_next_question(window, human_correct, human_total, target, choice, RAVEN_folder, file, file_number))
+    button = tk.Button(score_frame, text='Next question ->', font=('Helvatical bold', 18), highlightbackground='#E9F5FF', padx=5, pady=5, command=lambda: get_next_question(window, human_correct, human_total, target, choice, RAVEN_folder, file, file_number, ai_correct, ai_total, ai_choice))
     button.place(x=0, y=300)
 
 
@@ -163,7 +237,7 @@ def get_next_question(window, human_correct, human_total, target, v, RAVEN_folde
 window = tk.Tk()
 
 window.title('Visual IQ Test')
-window.geometry('1000x600')
+window.geometry('1200x600')
 window.configure(bg='#e9f5ff')
 window.resizable(False, False)      # make window non-resizable
 
@@ -183,9 +257,10 @@ context_panel_frame.grid(row=0, column=0, padx=10, pady=10)
 #RAVEN_folder = "C:\\Users\\Hertz\\Documents\\SJSU Coursework\\MS Project_big files\\RAVEN-10000-release\\RAVEN-10000\\center_single"
 RAVEN_folder = filedialog.askdirectory()
 # to parse through one by one in the future
-file_number = 1368
-#file = "RAVEN_"+str(file_number)+"_train.npz"
-file = "RAVEN_"+str(file_number)+"_test.npz"
+#file_number = 1368
+file_number = 0
+file = "RAVEN_"+str(file_number)+"_train.npz"
+#file = "RAVEN_"+str(file_number)+"_test.npz"
 
 file_number = file_number+1
 npz_file = np.load(os.path.join(RAVEN_folder,file))
@@ -193,8 +268,14 @@ npz_subfile_image = npz_file["image"]
 npz_subfile_target = npz_file["target"]
 target = npz_subfile_target+1
 #target = npz_subfile_target
-print(target)
+print("correct answer:", target)
 
+
+with zipfile.ZipFile(os.path.join(RAVEN_folder, file), 'r') as zip_ref:
+    zip_ref.extractall(os.getcwd())
+
+file_folder = "RAVEN_"+str(file_number)+"_train"
+file_path = os.path.join(os.getcwd(), file_folder)
 #---------------------------------------------
 
 
@@ -225,18 +306,12 @@ img_position = img_position-1
 
 
 ##--model testing
-import torchvision.models as models
-#from model.model_b3_p import Reab3p16
-import model.model_b3_p as m
-import torch 
-import os
-import tensorflow as tf 
-import argparse
 
 
-model_path = "C:\\Users\\sonam\\Desktop\\MS_Project\\test_model\\epochbest"
+model_path = "C:\\Users\\Hertz\\Documents\\SJSU Coursework\\MS Project_big files\\git\\distracting_feature\\distracting_feature\\epochs\\epochbest"
 
-image_path = "C:\\Users\\sonam\\Desktop\\MS_Project\\test_model\\RAVEN_1368_test\\image.npy"
+#image_path = "C:\\Users\\sonam\\Desktop\\MS_Project\\test_model\\RAVEN_1368_test\\image.npy"
+image_path = file_folder
 ap = argparse.ArgumentParser()
 #ap.add_argument("type_loss", type=bool)
 #ap.add_argument("image_path", type=str)
@@ -244,11 +319,16 @@ ap.add_argument('--type_loss', type=bool, default=False)
 ap.add_argument('--image_path', type=str,default= image_path)
 args = ap.parse_args()
 
-data = np.load(image_path)
+
+data = npz_subfile_image
+
+#data = np.load(image_path)
 data = data.reshape(1, 16, 160, 160)/255
-print(data.shape)
+#print(data.shape)
 
 data = data.astype(np.float32)
+
+
 
 data = torch.from_numpy(data)
 device = torch.device('cpu')
@@ -272,17 +352,19 @@ prob_list =[tup1.item(),tup2.item(),tup3.item(),tup4.item(),tup5.item(),tup6.ite
 
 max_prob = max(prob_list)  #Return the max value of the list.
 max_index = prob_list.index(max_prob)
-choice = max_index + 1
-print("choice value:", choice)
+ai_choice = max_index + 1
+print("ai choice value:", ai_choice)
 
 # ----------- SCORE FRAME ----------- 
 ai_total=ai_total+1
 if human_total!=0:
+    if (choice==target):
+        human_correct = human_correct+1
     human_score = human_correct/human_total
 else:
     human_score = ""
 if ai_total!=0:
-    if (choice == target):
+    if (ai_choice == target):
         ai_correct=ai_correct+1
     ai_score = ai_correct/ai_total
 else:
@@ -301,7 +383,7 @@ score1.place(x = 0, y = 5)
 score2 = tk.Label(score_frame, text = 'AI: '+str(ai_score), bg='#e9f5ff', font=('Helvatical bold', 20))
 score2.place(x = 0, y = 35)
 
-button = tk.Button(score_frame, text='Next question ->', font=('Helvatical bold', 18), highlightbackground='#E9F5FF', padx=5, pady=5, command=lambda: get_next_question(window, human_correct, human_total, target, choice, RAVEN_folder, file, file_number))
+button = tk.Button(score_frame, text='Next question ->', font=('Helvatical bold', 18), highlightbackground='#E9F5FF', padx=5, pady=5, command=lambda: get_next_question(window, human_correct, human_total, target, choice, RAVEN_folder, file, file_number, ai_correct, ai_total, ai_choice))
 button.place(x=0, y=300)
 
 
