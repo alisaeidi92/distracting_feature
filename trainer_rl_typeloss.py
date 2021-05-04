@@ -44,7 +44,7 @@ def weights_init(m):
 ##function to save the state of model after training on one batch
 def save_state(state, path):              
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    torch.save(state, path)
+    torch.save(state, path+'.pt')
 
         
 def averagenum(num):
