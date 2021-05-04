@@ -44,7 +44,7 @@ def weights_init(m):
 ##function to save the state of model after training on one batch
 def save_state(state, path):              
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    torch.save(state, path)
+    torch.save(state, path+'.pt')
 
         
 def averagenum(num):
@@ -308,6 +308,9 @@ def main(args):
             print("save weights")
             ddpg.save_models(args.model_dir+'/',epoch_count )                  ##saving the model
             save_state(model.state_dict(), args.model_dir+"/epoch"+str(epoch_count))
+        #if epoch_count == 400:
+        #        print(f"we have reached to epoch {epoch_count}!")
+        #        break
 
 
 
