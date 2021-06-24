@@ -43,6 +43,7 @@ net_arg.add_argument('--load_weight', dest='load_weight', type=str, default='/ho
 net_arg.add_argument('--restore', dest='restore', type=bool, default=True)
 net_arg.add_argument('--rl_style', dest='rl_style', type=str, default='ddpg')
 net_arg.add_argument('--image_type', dest='image_type', type=str, default='image')
+net_arg.add_argument('--num_agents', dest='num_agents', type=int, default=1)
 
 def get_args():
     """Parses all of the arguments above, which mostly correspond to the
