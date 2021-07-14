@@ -144,12 +144,16 @@ def main(args):
     elif args.rl_style=="ddpg":    ##if want to use ddpg model (aiming to use this)
         ram = MemoryBuffer(1000)   
         ddpg = Trainer(style_raven_len*4+2, style_raven_len, 1, ram)        ##creating an instance of Trainer class defined  in rl folder (ddpg.py) why style_raven_len*4+2? 
+    elif args.rl_style = "maddpg":
+        # To be implemented
     alpha_1=0.1
 
     if args.rl_style=="dqn":
         a = dqn.choose_action([0.5] * 3)  # TODO
     elif args.rl_style=="ddpg":
         action_ = ddpg.get_exploration_action(np.zeros([style_raven_len*4+2]).astype(np.float32),alpha_1) ##calling exploration which returns action? 
+    elif args.rl_style == "maddpg":
+        action_ = agent.select_action(s[agent_id], noise, epsilon)
     if args.type_loss:loss_fn=nn.BCELoss()                      ##Creates a criterion that measures the Binary Cross Entropy between the target and the output.
     best_acc=0.0                                                ##setting accuracy to 0.0
     while True:                                                ##loop(train)  until
