@@ -59,7 +59,7 @@ class Actor(nn.Module):
         self.state_dim = state_dim
 	self.action_dim = action_dim
 	self.action_lim = action_lim
-
+        
 	# network dim [state dim, 256, 128, 64, action dim]
 		
 	self.fc1 = nn.Linear(state_dim,256)
@@ -91,7 +91,7 @@ class Critic(nn.Module):
         
         self.state_dim = state_dim
 	self.action_dim = action_dim
-        
+        self.max_action = args.high_action
         
 	self.fcs1 = nn.Linear(state_dim,256)
 	self.fcs1.weight.data = fanin_init(self.fcs1.weight.data.size()) 
@@ -117,12 +117,12 @@ class Critic(nn.Module):
         x = torch.cat([state, action], dim=1)
         
         s1 = F.relu(self.fcs1(state))
-		s2 = F.relu(self.fcs2(s1))
-		a1 = F.relu(self.fca1(action))
-		x = torch.cat((s2,a1),dim=1)
+	s2 = F.relu(self.fcs2(s1))
+	a1 = F.relu(self.fca1(action))
+	x = torch.cat((s2,a1),dim=1)
 
-		x = F.relu(self.fc2(x))		#using relu activation for the critic (model for regression)
-		x = self.fc3(x)
+	x = F.relu(self.fc2(x))		#using relu activation for the critic (model for regression)
+	x = self.fc3(x)
         
         return x
    
@@ -146,7 +146,7 @@ class Buffer:
 
     # store the episode
     def store_episode(self, o, u, r, o_next):
-        idxs = self._get_storage_idx(inc=1)  # 以transition的形式存，每次只存一条经验
+        idxs = self._get_storage_idx(inc=1)
         for i in range(self.args.n_agents):
             with self.lock:
                 self.buffer['o_%d' % i][idxs] = o[i]
@@ -180,6 +180,7 @@ class Buffer:
     
 
 class MADDPG:
+	
     def __init__(self, args, agent_id):  # 因为不同的agent的obs、act维度可能不一样，所以神经网络不同,需要agent_id来区分
         self.args = args
         self.agent_id = agent_id
@@ -220,7 +221,7 @@ class MADDPG:
                                                                           self.model_path + '/actor_params.pkl'))
             print('Agent {} successfully loaded critic_network: {}'.format(self.agent_id,
                                                                            self.model_path + '/critic_params.pkl'))
-
+		
     # soft update
     def _soft_update_target_network(self):
         for target_param, param in zip(self.actor_target_network.parameters(), self.actor_network.parameters()):
@@ -228,6 +229,18 @@ class MADDPG:
 
         for target_param, param in zip(self.critic_target_network.parameters(), self.critic_network.parameters()):
             target_param.data.copy_((1 - self.args.tau) * target_param.data + self.args.tau * param.data)
+
+    def get_exploration_action(self, state, alpha_1):
+		"""
+		gets the action from actor added with exploration noise
+		:param state: state (Numpy array)
+		:return: sampled action (Numpy array)
+		"""
+		state = Variable(torch.from_numpy(state))
+		action = self.actor.forward(state).detach()
+		new_action = action + torch.from_numpy((self.noise.sample() * self.action_lim).astype(np.float32))
+		new_action = F.softmax(new_action/alpha_1, 0)
+		return new_action.data.numpy()
 
     # update the network
     def train(self, transitions, other_agents):
@@ -290,169 +303,4 @@ class MADDPG:
         torch.save(self.actor_network.state_dict(), model_path + '/' + num + '_actor_params.pkl')
         torch.save(self.critic_network.state_dict(),  model_path + '/' + num + '_critic_params.pkl')
         
-        
-class Agent:
-    def __init__(self, agent_id, args):
-        self.args = args
-        self.agent_id = agent_id
-        self.policy = MADDPG(args, agent_id)
-
-    def select_action(self, o, noise_rate, epsilon):
-        if np.random.uniform() < epsilon:
-            u = np.random.uniform(-self.args.high_action, self.args.high_action, self.args.action_shape[self.agent_id])
-        else:
-            inputs = torch.tensor(o, dtype=torch.float32).unsqueeze(0)
-            pi = self.policy.actor_network(inputs).squeeze(0)
-            # print('{} : {}'.format(self.name, pi))
-            u = pi.cpu().numpy()
-            noise = noise_rate * self.args.high_action * np.random.randn(*u.shape)  # gaussian noise
-            u += noise
-            u = np.clip(u, -self.args.high_action, self.args.high_action)
-        return u.copy()
-
-    def learn(self, transitions, other_agents):
-        self.policy.train(transitions, other_agents)        
-
-
-
-def store_args(method):
-    """Stores provided method args as instance attributes.
-    """
-    argspec = inspect.getfullargspec(method)
-    defaults = {}
-    if argspec.defaults is not None:
-        defaults = dict(
-            zip(argspec.args[-len(argspec.defaults):], argspec.defaults))
-    if argspec.kwonlydefaults is not None:
-        defaults.update(argspec.kwonlydefaults)
-    arg_names = argspec.args[1:]
-
-    @functools.wraps(method)
-    def wrapper(*positional_args, **keyword_args):
-        self = positional_args[0]
-        # Get default arg values
-        args = defaults.copy()
-        # Add provided arg values
-        for name, value in zip(arg_names, positional_args[1:]):
-            args[name] = value
-        args.update(keyword_args)
-        self.__dict__.update(args)
-        return method(*positional_args, **keyword_args)
-
-    return wrapper
-
-
-def make_env(args):
-    from multiagent.environment import MultiAgentEnv
-    import multiagent.scenarios as scenarios
-
-    # load scenario from script
-    scenario = scenarios.load(args.scenario_name + ".py").Scenario()
-
-    # create world
-    world = scenario.make_world()
-    # create multiagent environment
-    env = MultiAgentEnv(world, scenario.reset_world, scenario.reward, scenario.observation)
-    # env = MultiAgentEnv(world)
-    args.n_players = env.n  # 包含敌人的所有玩家个数
-    args.n_agents = env.n - args.num_adversaries  # 需要操控的玩家个数，虽然敌人也可以控制，但是双方都学习的话需要不同的算法
-    args.obs_shape = [env.observation_space[i].shape[0] for i in range(args.n_agents)]  # 每一维代表该agent的obs维度
-    action_shape = []
-    for content in env.action_space:
-        action_shape.append(content.n)
-    args.action_shape = action_shape[:args.n_agents]  # 每一维代表该agent的act维度
-    args.high_action = 1
-    args.low_action = -1
-    return env, args
-
-class Runner:
-    def __init__(self, args, env):
-        self.args = args
-        self.noise = args.noise_rate
-        self.epsilon = args.epsilon
-        self.episode_limit = args.max_episode_len
-        self.env = env
-        self.agents = self._init_agents()
-        self.buffer = Buffer(args)
-        self.save_path = self.args.save_dir + '/' + self.args.scenario_name
-        if not os.path.exists(self.save_path):
-            os.makedirs(self.save_path)
-
-    def _init_agents(self):
-        agents = []
-        for i in range(self.args.n_agents):
-            agent = Agent(i, self.args)
-            agents.append(agent)
-        return agents
-
-    def run(self):
-        returns = []
-        for time_step in tqdm(range(self.args.time_steps)):
-            # reset the environment
-            if time_step % self.episode_limit == 0:
-                s = self.env.reset()
-            u = []
-            actions = []
-            with torch.no_grad():
-                for agent_id, agent in enumerate(self.agents):
-                    action = agent.select_action(s[agent_id], self.noise, self.epsilon)
-                    u.append(action)
-                    actions.append(action)
-            for i in range(self.args.n_agents, self.args.n_players):
-                actions.append([0, np.random.rand() * 2 - 1, 0, np.random.rand() * 2 - 1, 0])
-            s_next, r, done, info = self.env.step(actions)
-            self.buffer.store_episode(s[:self.args.n_agents], u, r[:self.args.n_agents], s_next[:self.args.n_agents])
-            s = s_next
-            if self.buffer.current_size >= self.args.batch_size:
-                transitions = self.buffer.sample(self.args.batch_size)
-                for agent in self.agents:
-                    other_agents = self.agents.copy()
-                    other_agents.remove(agent)
-                    agent.learn(transitions, other_agents)
-            if time_step > 0 and time_step % self.args.evaluate_rate == 0:
-                returns.append(self.evaluate())
-                plt.figure()
-                plt.plot(range(len(returns)), returns)
-                plt.xlabel('episode * ' + str(self.args.evaluate_rate / self.episode_limit))
-                plt.ylabel('average returns')
-                plt.savefig(self.save_path + '/plt.png', format='png')
-            self.noise = max(0.05, self.noise - 0.0000005)
-            self.epsilon = max(0.05, self.noise - 0.0000005)
-            np.save(self.save_path + '/returns.pkl', returns)
-
-    def evaluate(self):
-        returns = []
-        for episode in range(self.args.evaluate_episodes):
-            # reset the environment
-            s = self.env.reset()
-            rewards = 0
-            for time_step in range(self.args.evaluate_episode_len):
-                self.env.render()
-                actions = []
-                with torch.no_grad():
-                    for agent_id, agent in enumerate(self.agents):
-                        action = agent.select_action(s[agent_id], 0, 0)
-                        actions.append(action)
-                for i in range(self.args.n_agents, self.args.n_players):
-                    actions.append([0, np.random.rand() * 2 - 1, 0, np.random.rand() * 2 - 1, 0])
-                s_next, r, done, info = self.env.step(actions)
-                rewards += r[0]
-                s = s_next
-            returns.append(rewards)
-            print('Returns is', rewards)
-        return sum(returns) / self.args.evaluate_episodes
-    
-
-
-
-
-if __name__ == '__main__':
-    # get the params
-    args = get_args()
-    env, args = make_env(args)
-    runner = Runner(args, env)
-    if args.evaluate:
-        returns = runner.evaluate()
-        print('Average returns is', returns)
-    else:
-        runner.run()
+	
