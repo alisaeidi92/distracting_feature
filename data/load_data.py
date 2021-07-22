@@ -38,7 +38,7 @@ class Dataset(torch.utils.data.Dataset):
         return len(self.data_files)
 def load_data(args, data_split):
     data_files = []
-    data_dir = '../process_data/reason_data/reason_data/RAVEN-10000/'
+    data_dir = '/home/010818990/distracting_features/HPC_Transfer/RAVEN-10000/'
     for subdir in os.listdir(data_dir):
 
         for filename in os.listdir(data_dir + subdir):

@@ -29,9 +29,9 @@ net_arg.add_argument('--weight_decay', dest='weight_decay', type=float, default=
 net_arg.add_argument('--mo', dest='mo', type=float, default=0.8)
 net_arg.add_argument('--net', dest='net', type=str, default="Reab3p16")
 net_arg.add_argument('--optm', dest='optm', type=str, default='SGD')
-net_arg.add_argument('--gpunum', dest='gpunum', type=int, default=1)
+net_arg.add_argument('--gpunum', dest='gpunum', type=int, default=2)
 net_arg.add_argument('--numwork', dest='numwork', type=int, default=10)
-net_arg.add_argument('--type_loss', dest='type_loss', type=bool, default=True)
+net_arg.add_argument('--type_loss', dest='type_loss', type=bool, default=False)
 net_arg.add_argument('--random_seed', type=int, default=12345)
 net_arg.add_argument('--rl', dest='rl', type=bool, default=False)
 #Misc
@@ -54,5 +54,5 @@ def get_args():
     else:
         setattr(args, 'cuda', False)
     if len(unparsed) > 1:
-        logger.info("Unparsed args: "+unparsed)
+        logger.info("Unparsed args: "+str(unparsed))
     return args, unparsed

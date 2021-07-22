@@ -30,7 +30,7 @@ class TensorBoard(object):
 
             img.save(bio, format="png")
             image_summary = Summary.Image(encoded_image_string=bio.getvalue())    ##binary encoded string for images
-            summary.value.add(tag=f"{tag}/{idx}", image=image_summary)
+            summary.value.add(tag="{tag}/{idx}", image=image_summary)
             self.summary_writer.add_summary(summary, global_step=step)              ##image summary with tag for model
 
     def scalar_summary(self, tag, value, step):                 ##to save various summary(tag: action, train-loss,valreward,actor,critic obtained in trainer_rl_typeloss file

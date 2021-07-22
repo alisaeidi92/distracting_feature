@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import time
 from argparse import ArgumentParser         ##python library for providing flexibilty to change arguments value(especially for command line interface)
 
@@ -44,7 +45,7 @@ def weights_init(m):
 ##function to save the state of model after training on one batch
 def save_state(state, path):              
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    torch.save(state, path+'.pt')
+    torch.save(state, path)
 
         
 def averagenum(num):
@@ -58,21 +59,26 @@ def averagenum(num):
 def adjust_learning_rate(optimizer, epoch, lr_steps,n):
     """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
     decay = 0.2
-
-    if n>1:
-        for param_group in optimizer.module.param_groups:
-            param_group['lr'] = decay * param_group['lr']
-            print(("epoch %d : lr=%.5f") % (epoch,  param_group['lr']))
-            if epoch>15:
-                param_group['momentum'] = 0.9
-                param_group['weight_decay'] = decay * param_group['lr']
-    else:
-        for param_group in optimizer.param_groups:
-            param_group['lr'] = decay * param_group['lr']
-            param_group['weight_decay'] = decay * param_group['lr']
-            print(("epoch %d : lr=%.5f") % (epoch, param_group['lr']))
-            if epoch>15:
-                param_group['momentum'] = 0.9
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = decay * param_group['lr']
+        param_group['weight_decay'] = decay * param_group['lr']
+        print(("epoch %d : lr=%.5f") % (epoch, param_group['lr']))
+        if epoch>15:
+            param_group['momentum'] = 0.9
+#    if n>1:
+#        for param_group in optimizer.module.param_groups:
+#            param_group['lr'] = decay * param_group['lr']
+#            print(("epoch %d : lr=%.5f") % (epoch,  param_group['lr']))
+#            if epoch>15:
+#                param_group['momentum'] = 0.9
+#                param_group['weight_decay'] = decay * param_group['lr']
+#    else:
+#        for param_group in optimizer.param_groups:
+#            param_group['lr'] = decay * param_group['lr']
+#            param_group['weight_decay'] = decay * param_group['lr']
+#            print(("epoch %d : lr=%.5f") % (epoch, param_group['lr']))
+#            if epoch>15:
+#                param_group['momentum'] = 0.9
 def main(args):
 
     # Step 1: init data folders
@@ -94,10 +100,15 @@ def main(args):
         model = Reab3p16(args)
     elif args.net=='RN_mlp':                  ##if want to use model WildRelationNet
         model =WildRelationNet()
-    if args.gpunum > 1:                        
-        model = nn.DataParallel(model, device_ids=range(args.gpunum)) ##The nn package defines a set of Modules, which you can think of as a neural network layer that has produces output from 
-                                                                       ##input and may have some trainable weights.
-                                                                    ##when more than one gpu, want to save model weights using DataParrallel module prefix
+    if args.gpunum > 1:  
+        #os.environ["CUDA_VISIBLE_DEVICES"] = str(range(args.gpunum))
+        #model = nn.DataParallel(model, device_ids=range(args.gpunum)) 
+        os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+        model = nn.DataParallel(model)
+        
+        ##The nn package defines a set of Modules, which you can think of as a neural network layer that has produces output from 
+        ##input and may have some trainable weights.
+        ##when more than one gpu, want to save model weights using DataParrallel module prefix
     weights_path = args.path_weight+"/"+args.load_weight               ##saved weigths of model 
 
     if os.path.exists(weights_path) and args.restore:             ##pretrained weights
@@ -128,10 +139,13 @@ def main(args):
 ##A very popular technique that is used along with SGD is called Momentum. Instead of using only the gradient of the current 
 ##step to guide the search, momentum also accumulates the gradient of the past steps to determine the direction to go
     model.cuda()
-    optimizer = optim.SGD(model.parameters(), lr=args.lr,momentum=args.mo, weight_decay=5e-4) ##Adam has convergence problems that often SGD + momentum can converge better 
-                                                                               ##with longer training time. We often see a lot of papers in 2018 and 2019 were still using SGD
-    if args.gpunum>1:
-        optimizer = nn.DataParallel(optimizer, device_ids=range(args.gpunum))
+    optimizer = optim.SGD(model.parameters(), lr=args.lr,momentum=args.mo, weight_decay=5e-4) ##Adam has convergence problems that often SGD + momentum can converge better                                              ##with longer training time. We often see a lot of papers in 2018 and 2019 were still using SGD
+    
+    
+    
+    #if args.gpunum>1:
+    #    optimizer = nn.DataParallel(optimizer)
+        #optimizer = nn.DataParallel(optimizer, device_ids=range(args.gpunum))
                                   ##setting iter-count and epoch to 1 before starting training
     iter_count = 1               ## number of batches of data the algorithm has seen (or simply the number of passes the algorithm has done on the dataset)
     epoch_count = 1              ##number of times a learning algorithm sees the complete dataset 
@@ -158,17 +172,18 @@ def main(args):
         for i in range(style_raven_len):                
             tb.scalar_summary("action/a"+str(i), action_[i], epoch_count) ##saving summary such as poch counts and actions
 
-        data_files = preprocess.provide_data(args.regime, style_raven_len, action_,style_raven) 
-
-        train_files = [data_file for data_file in data_files if 'train' in data_file]               #creating a list of training files
+        data_files = preprocess.provide_data(args.regime, style_raven_len, action_,style_raven, args.datapath) 
+        
+        train_files = [data_file for data_file in data_files if 'train' in data_file]               
+        #creating a list of training files
         print("train_num:", len(train_files))
     
         ##torch.utils.data.DataLoader` supports both map-style and iterable-style datasets with single- or multi-process loading,
         ##customizing loading order and optional automatic batching (collation) and memory pinning
         ##shuffle true because we want independent B training batches from Dataset
-        train_loader = torch.utils.data.DataLoader(Dataset(args,train_files), batch_size=args.batch_size, shuffle=True,  
-                                                   num_workers=args.numwork)
-        model.train()                      ##start training model
+        train_loader = torch.utils.data.DataLoader(Dataset(args,train_files), batch_size=args.batch_size, shuffle=True, num_workers=args.numwork)
+        model.train()
+        ##start training model
         iter_epoch = int(len(train_files) / args.batch_size)         ##setting iteration count for total dataset
         acc_part_train=np.zeros([style_raven_len,2]).astype(np.float32)       ##defining variable for saving part accuracy while training
 
@@ -179,10 +194,13 @@ def main(args):
                 print(x.shape[0])
                 break                                                            
             x, y ,meta = Variable(x).cuda(), Variable(y).cuda(), Variable(me).cuda()  ##Components are accessible as variable.x,  variable.y,  variable.z
-            if args.gpunum > 1:                                                        
-                optimizer.module.zero_grad()             ##to set the gradient of the parameters in the model to 0, module beacause DataParallel
-            else:
-                optimizer.zero_grad()                    ## same as above set the gradient of the parameters to zero
+            
+            
+            #if args.gpunum > 1:                                          
+                #optimizer.module.zero_grad()             ##to set the gradient of the parameters in the model to 0, module beacause DataParallel
+            #else:
+                #optimizer.zero_grad()                    ## same as above set the gradient of the parameters to zero
+            optimizer.zero_grad() 
             if args.type_loss:
                 pred_train, pred_meta= model(x)              ##applying model to x where x is from training data
             else:
@@ -194,10 +212,13 @@ def main(args):
         #When you call loss.backward(), all it does is compute gradient of loss w.r.t all the parameters in loss that have 
         ##requires_grad = True and store them in parameter.grad attribute for every parameter.
         ##optimizer.step() updates all the parameters based on parameter.grad
-            if args.gpunum > 1:
-                optimizer.module.step()      ##module for DataParallel
-            else:
-                optimizer.step()
+            #if args.gpunum > 1:
+            #    optimizer.module.step()      ##module for DataParallel
+            #else:
+            #    optimizer.step()
+            optimizer.step()
+            
+            
             iter_count += 1                ##update iter-count by 1 evrytime
             pred = pred_train.data.max(1)[1]  
             correct = pred.eq(y.data).cpu()       ##compare actual and predicted category
@@ -242,7 +263,8 @@ def main(args):
             for x, y, style,me in val_loader:             ##using validation data
                 iter_test+=1
                 x, y = Variable(x).cuda(), Variable(y).cuda()
-                pred,_ = model(x)
+                #pred,_ = model(x)
+                pred = model(x)
                 pred = pred.data.max(1)[1]
                 correct = pred.eq(y.data).cpu().numpy()
                 accuracy = correct.sum() * 100.0 / len(y)   ##accuracy is calc basd on how many labels match
@@ -266,7 +288,9 @@ def main(args):
         baseline_rl=70                                          ##baseline for accuracy
         reward=np.mean(acc_part_val)*100-baseline_rl          ##calculating reward using val accuracy
         tb.scalar_summary("valreward", reward,epoch_count)        ##saving summary
-        action_list=[x for x in a]
+        #action_list=[x for x in a]
+        action_list=[x for x in action_]
+        
         cur_state=np.array(acc_part_val+acc_part_train+action_list+mean_loss_train ##saving all calc in currnt state
                            +[loss_train]+[epoch_count]).astype(np.float32)
         #np.expand_dims(, axis=0)
@@ -308,9 +332,6 @@ def main(args):
             print("save weights")
             ddpg.save_models(args.model_dir+'/',epoch_count )                  ##saving the model
             save_state(model.state_dict(), args.model_dir+"/epoch"+str(epoch_count))
-        #if epoch_count == 400:
-        #        print(f"we have reached to epoch {epoch_count}!")
-        #        break
 
 
 

@@ -1,0 +1,9 @@
+pathlib
+tensorflow
+torch
+torchvision
+tensorboardX==2.0
+future
+enum34
+pillow
+scipy

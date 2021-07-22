@@ -158,33 +158,40 @@ class AttributeType(Enum):
     POSITION = 4
     NUMBER = 5
 '''
-def provide_data(regime, n,a,s):
+def provide_data(regime, n,a,s, data_directory):
     #code = ['SHAPE', 'LINE', "COLOR", 'NUMBER', 'POSITION', 'SIZE','TYPE',
     #        'PROGRESSION', "XOR", "OR", 'AND', 'CONSISTENT_UNION']
+    
+    # added n = 10000
+    #n = 10000
+    
     base=4000
     data_files=[]
-    data_dir = '/home/lab/zkc/reason/process_data/reason_data/reason_data/RAVEN-10000/'
+    data_dir = data_directory
+    #data_dir = '/home/lab/zkc/reason/process_data/reason_data/reason_data/RAVEN-10000/'
     for subdir in os.listdir(data_dir):
 
         for filename in os.listdir(data_dir + subdir):
             if "npz" in filename and "train" in filename:
                 data_files.append(data_dir+subdir+"/"+filename)
 
-
+    
     train_files=[[] for _ in range(n)]
     for data_file in data_files:
-        name_=data_file[:-4].split("/")[-1].split("_")[3:]
+        #name_=data_file[:-4].split("/")[-1].split("_")[3:]
+        name_=data_file[:-4].split("/")[-1].split("_")[1]
         for number_ in name_:
             train_files[int(number_)].append(data_file)
 
-
+    
     df=[]
     for i in range(n):
 
         random.shuffle(train_files[i])
         df.extend(train_files[i][:int(base*a[i])])
         #print(x, int(base*a[i]))
-
+    print("df", len(df))
+    
     return df
 
 

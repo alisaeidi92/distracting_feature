@@ -1,32 +1,33 @@
-"""
-
-HOW DOES DDPG WORK?
-
-At its core, DDPG is a policy gradient algorithm that uses a stochastic behavior policy for good exploration but estimates a deterministic target policy, 
-which is much easier to learn. Policy gradient algorithms utilize a form of policy iteration: they evaluate the policy, 
-and then follow the policy gradient to maximize performance. Since DDPG is off-policy and uses a deterministic target policy, 
-this allows for the use of the Deterministic Policy Gradient theorem (which will be derived shortly). DDPG is an actor-critic algorithm as well; 
-it primarily uses two neural networks, one for the actor and one for the critic. 
-These networks compute action predictions for the current state and generate a temporal-difference (TD) error signal each time step. 
-The input of the actor network is the current state, and the output is a single real value representing an action chosen from a continuous action space (whoa!). 
-The critic’s output is simply the estimated Q-value of the current state and of the action given by the actor. 
-The deterministic policy gradient theorem provides the update rule for the weights of the actor network. 
-The critic network is updated from the gradients obtained from the TD error signal.
-
-"""
-
-
-
-"""
-In this work we present a 
-
-- model-free
-- off-policy 
-- actor-critic algorithm 
-
-using deep function approximators that can learn policies in high-dimensional, continuous action spaces.
-
-"""
+# -*- coding: utf-8 -*-
+#"""
+#
+#HOW DOES DDPG WORK?
+#
+#At its core, DDPG is a policy gradient algorithm that uses a stochastic behavior policy for good exploration but estimates a deterministic target policy, 
+#which is much easier to learn. Policy gradient algorithms utilize a form of policy iteration: they evaluate the policy, 
+#and then follow the policy gradient to maximize performance. Since DDPG is off-policy and uses a deterministic target policy, 
+#this allows for the use of the Deterministic Policy Gradient theorem (which will be derived shortly). DDPG is an actor-critic algorithm as well; 
+#it primarily uses two neural networks, one for the actor and one for the critic. 
+#These networks compute action predictions for the current state and generate a temporal-difference (TD) error signal each time step. 
+#The input of the actor network is the current state, and the output is a single real value representing an action chosen from a continuous action space (whoa!). 
+#The critic’s output is simply the estimated Q-value of the current state and of the action given by the actor. 
+#The deterministic policy gradient theorem provides the update rule for the weights of the actor network. 
+#The critic network is updated from the gradients obtained from the TD error signal.
+#
+#"""
+#
+#
+#
+#"""
+#In this work we present a 
+#
+#- model-free
+#- off-policy 
+#- actor-critic algorithm 
+#
+#using deep function approximators that can learn policies in high-dimensional, continuous action spaces.
+#
+#"""
 
 
 from __future__ import division
@@ -68,11 +69,11 @@ def fanin_init(size, fanin=None):
 class Critic(nn.Module):
 
 	def __init__(self, state_dim, action_dim):
-		"""
-		:param state_dim: Dimension of input state (int)
-		:param action_dim: Dimension of input action (int)
-		:return:
-		"""
+#		"""
+#		:param state_dim: Dimension of input state (int)
+#		:param action_dim: Dimension of input action (int)
+#		:return:
+#		"""
 		super(Critic, self).__init__()
 
 		self.state_dim = state_dim
@@ -100,12 +101,12 @@ class Critic(nn.Module):
 	# implement the model structure
 	
 	def forward(self, state, action):
-		"""
-		returns Value function Q(s,a) obtained from critic network
-		:param state: Input state (Torch Variable : [n,state_dim] )
-		:param action: Input Action (Torch Variable : [n,action_dim] )
-		:return: Value function : Q(S,a) (Torch Variable : [n,1] )
-		"""
+#		"""
+#		returns Value function Q(s,a) obtained from critic network
+#		:param state: Input state (Torch Variable : [n,state_dim] )
+#		:param action: Input Action (Torch Variable : [n,action_dim] )
+#		:return: Value function : Q(S,a) (Torch Variable : [n,1] )
+#		"""
 		s1 = F.relu(self.fcs1(state))
 		s2 = F.relu(self.fcs2(s1))
 		a1 = F.relu(self.fca1(action))
@@ -120,12 +121,12 @@ class Critic(nn.Module):
 class Actor(nn.Module):
 
 	def __init__(self, state_dim, action_dim, action_lim):
-		"""
-		:param state_dim: Dimension of input state (int)
-		:param action_dim: Dimension of output action (int)
-		:param action_lim: Used to limit action in [-action_lim,action_lim]
-		:return:
-		"""
+#		"""
+#		:param state_dim: Dimension of input state (int)
+#		:param action_dim: Dimension of output action (int)
+#		:param action_lim: Used to limit action in [-action_lim,action_lim]
+#		:return:
+#		"""
 		super(Actor, self).__init__()
 
 		self.state_dim = state_dim
@@ -149,14 +150,14 @@ class Actor(nn.Module):
 		
 	# implement the model structure
 	def forward(self, state):
-		"""
-		returns policy function Pi(s) obtained from actor network
-		this function is a gaussian prob distribution for all actions
-		with mean lying in (-1,1) and sigma lying in (0,1)
-		The sampled action can , then later be rescaled
-		:param state: Input state (Torch Variable : [n,state_dim] )
-		:return: Output action (Torch Variable: [n,action_dim] )
-		"""
+#		"""
+#		returns policy function Pi(s) obtained from actor network
+#		this function is a gaussian prob distribution for all actions
+#		with mean lying in (-1,1) and sigma lying in (0,1)
+#		The sampled action can , then later be rescaled
+#		:param state: Input state (Torch Variable : [n,state_dim] )
+#		:return: Output action (Torch Variable: [n,action_dim] )
+#		"""
 		x = F.relu(self.fc1(state))
 		x = F.relu(self.fc2(x))
 		x = F.relu(self.fc3(x))
@@ -166,22 +167,22 @@ class Actor(nn.Module):
 
 	
 	
-'''	
-Directly implementing Q learning with neural networks proved to be unstable in many
-environments. Since the network being updated is also used in calculating the target
-value, the Q update is prone to divergence. Our solution is modified for actor-critic and using “soft” target updates, rather than
-directly copying the weights. We create a copy of the actor and critic networks that are used for calculating the target values.
-'''	
+#'''	
+#Directly implementing Q learning with neural networks proved to be unstable in many
+#environments. Since the network being updated is also used in calculating the target
+#value, the Q update is prone to divergence. Our solution is modified for actor-critic and using “soft” target updates, rather than
+#directly copying the weights. We create a copy of the actor and critic networks that are used for calculating the target values.
+#'''	
 
 # Soft update is used for optimizing the model
 def soft_update(target, source, tau):
-	"""
-	Copies the parameters from source network (x) to target network (y) using the below update
-	y = TAU*x + (1 - TAU)*y
-	:param target: Target network (PyTorch)
-	:param source: Source network (PyTorch)
-	:return:
-	"""
+#	"""
+#	Copies the parameters from source network (x) to target network (y) using the below update
+#	y = TAU*x + (1 - TAU)*y
+#	:param target: Target network (PyTorch)
+#	:param source: Source network (PyTorch)
+#	:return:
+#	"""
 	for target_param, param in zip(target.parameters(), source.parameters()):
 		target_param.data.copy_(
 			target_param.data * (1.0 - tau) + param.data * tau
@@ -190,25 +191,25 @@ def soft_update(target, source, tau):
 
 # Hard update is used to load the model		
 def hard_update(target, source):
-	"""
-	Copies the parameters from source network to target network
-	:param target: Target network (PyTorch)
-	:param source: Source network (PyTorch)
-	:return:
-	"""
+#	"""
+#	Copies the parameters from source network to target network
+#	:param target: Target network (PyTorch)
+#	:param source: Source network (PyTorch)
+#	:return:
+#	"""
 	for target_param, param in zip(target.parameters(), source.parameters()):
 			target_param.data.copy_(param.data)
 
 
 # checkpoints to keep track of state, best action/reward and episode number
 def save_training_checkpoint(state, is_best, episode_count):
-	"""
-	Saves the models, with all training parameters intact
-	:param state:
-	:param is_best:
-	:param filename:
-	:return:
-	"""
+#	"""
+#	Saves the models, with all training parameters intact
+#	:param state:
+#	:param is_best:
+#	:param filename:
+#	:return:
+#	"""
 	filename = str(episode_count) + 'checkpoint.path.rar'
 	torch.save(state, filename)
 	if is_best:
@@ -217,19 +218,19 @@ def save_training_checkpoint(state, is_best, episode_count):
 
 # Based on http://math.stackexchange.com/questions/1287634/implementing-ornstein-uhlenbeck-in-matlab
 
-'''
-Added exploration noise. In the literature, they use the Ornstein-Uhlenbeck stochastic process for control tasks that deal with momentum
-'''
-
-'''
-The Ornstein–Uhlenbeck process is a stationary Gauss–Markov process, which means that it is a Gaussian process, a Markov process, and is temporally homogeneous. 
-In fact, it is the only nontrivial process that satisfies these three conditions, up to allowing linear transformations of the space and time variables.
-Over time, the process tends to drift towards its mean function: such a process is called mean-reverting.
-
-The process can be considered to be a modification of the random walk in continuous time, or Wiener process, in which the properties of the process have been changed 
-so that there is a tendency of the walk to move back towards a central location, with a greater attraction when the process is further away from the center. 
-The Ornstein–Uhlenbeck process can also be considered as the continuous-time analogue of the discrete-time process.
-'''
+#'''
+#Added exploration noise. In the literature, they use the Ornstein-Uhlenbeck stochastic process for control tasks that deal with momentum
+#'''
+#
+#'''
+#The Ornstein–Uhlenbeck process is a stationary Gauss–Markov process, which means that it is a Gaussian process, a Markov process, and is temporally homogeneous. 
+#In fact, it is the only nontrivial process that satisfies these three conditions, up to allowing linear transformations of the space and time variables.
+#Over time, the process tends to drift towards its mean function: such a process is called mean-reverting.
+#
+#The process can be considered to be a modification of the random walk in continuous time, or Wiener process, in which the properties of the process have been changed 
+#so that there is a tendency of the walk to move back towards a central location, with a greater attraction when the process is further away from the center. 
+#The Ornstein–Uhlenbeck process can also be considered as the continuous-time analogue of the discrete-time process.
+#'''
 class OrnsteinUhlenbeckActionNoise:
 
 	def __init__(self, action_dim, mu = 0, theta = 0.15, sigma = 0.2):
@@ -251,13 +252,13 @@ class OrnsteinUhlenbeckActionNoise:
 class Trainer:
 
 	def __init__(self, state_dim, action_dim, action_lim, ram):
-		"""
-		:param state_dim: Dimensions of state (int)
-		:param action_dim: Dimension of action (int)
-		:param action_lim: Used to limit action in [-action_lim,action_lim]
-		:param ram: replay memory buffer object
-		:return:
-		"""
+#		"""
+#		:param state_dim: Dimensions of state (int)
+#		:param action_dim: Dimension of action (int)
+#		:param action_lim: Used to limit action in [-action_lim,action_lim]
+#		:param ram: replay memory buffer object
+#		:return:
+#		"""
 		self.state_dim = state_dim
 		self.action_dim = action_dim
 		self.action_lim = 1
@@ -279,22 +280,22 @@ class Trainer:
 		
 		
 	def get_exploitation_action(self, state,alpha_1):
-		"""
-		gets the action from target actor added with exploration noise
-		:param state: state (Numpy array)
-		:return: sampled action (Numpy array)
-		"""
+#		"""
+#		gets the action from target actor added with exploration noise
+#		:param state: state (Numpy array)
+#		:return: sampled action (Numpy array)
+#		"""
 		state = Variable(torch.from_numpy(state))
 		action = self.target_actor.forward(state).detach()
 		action=F.softmax(action/alpha_1,0)
 		return action.data.numpy()
 
 	def get_exploration_action(self, state,alpha_1):
-		"""
-		gets the action from actor added with exploration noise
-		:param state: state (Numpy array)
-		:return: sampled action (Numpy array)
-		"""
+#		"""
+#		gets the action from actor added with exploration noise
+#		:param state: state (Numpy array)
+#		:return: sampled action (Numpy array)
+#		"""
 		state = Variable(torch.from_numpy(state))
 		action = self.actor.forward(state).detach()
 		new_action = action + torch.from_numpy((self.noise.sample() * self.action_lim).astype(np.float32))
@@ -302,10 +303,10 @@ class Trainer:
 		return new_action.data.numpy()
 
 	def optimize(self):
-		"""
-		Samples a random batch from replay memory and performs optimization
-		:return:
-		"""
+#		"""
+#		Samples a random batch from replay memory and performs optimization
+#		:return:
+#		"""
 		s1,a1,r1,s2 = self.ram.sample(BATCH_SIZE)
 
 		s1 = Variable(torch.from_numpy(s1))
@@ -344,21 +345,21 @@ class Trainer:
 		# self.iter += 1
 
 	def save_models(self, model_dir,episode_count):
-		"""
-		saves the target actor and critic models
-		:param episode_count: the count of episodes iterated
-		:return:
-		"""
+#		"""
+#		saves the target actor and critic models
+#		:param episode_count: the count of episodes iterated
+#		:return:
+#		"""
 		torch.save(self.target_actor.state_dict(), model_dir + str(episode_count) + '_actor.pt')
 		torch.save(self.target_critic.state_dict(), model_dir + str(episode_count) + '_critic.pt')
 		print ('Models saved successfully')
 
 	def load_models(self, episode):
-		"""
-		loads the target actor and critic models, and copies them onto actor and critic models
-		:param episode: the count of episodes iterated (used to find the file name)
-		:return:
-		"""
+#		"""
+#		loads the target actor and critic models, and copies them onto actor and critic models
+#		:param episode: the count of episodes iterated (used to find the file name)
+#		:return:
+#		"""
 		self.actor.load_state_dict(torch.load('save/' + str(episode) + '_actor.pt'))
 		self.critic.load_state_dict(torch.load('save/' + str(episode) + '_critic.pt'))
 		hard_update(self.target_actor, self.actor)
@@ -366,20 +367,20 @@ class Trainer:
 		print ('Models loaded succesfully')
 
 ## Replay Buffer		
-		
-'''
-One challenge when using neural networks for reinforcement learning is that most optimization algorithms assume that the samples are independently and identically distributed. 
-Obviously, when the samples are generated from exploring sequentially in an environment this assumption no longer
-holds. Additionally, to make efficient use of hardware optimizations, it is essential to learn in minibatches, rather than online.
-
-As in DQN, we used a replay buffer to address these issues. The replay buffer is a finite sized cache
-R. Transitions were sampled from the environment according to the exploration policy and the tuple
-(st, at, rt, st+1) was stored in the replay buffer. When the replay buffer was full the oldest samples
-were discarded. At each timestep the actor and critic are updated by sampling a minibatch uniformly
-from the buffer. Because DDPG is an off-policy algorithm, the replay buffer can be large, allowing
-the algorithm to benefit from learning across a set of uncorrelated transitions.
-
-'''			
+#		
+#'''
+#One challenge when using neural networks for reinforcement learning is that most optimization algorithms assume that the samples are independently and identically distributed. 
+#Obviously, when the samples are generated from exploring sequentially in an environment this assumption no longer
+#holds. Additionally, to make efficient use of hardware optimizations, it is essential to learn in minibatches, rather than online.
+#
+#As in DQN, we used a replay buffer to address these issues. The replay buffer is a finite sized cache
+#R. Transitions were sampled from the environment according to the exploration policy and the tuple
+#(st, at, rt, st+1) was stored in the replay buffer. When the replay buffer was full the oldest samples
+#were discarded. At each timestep the actor and critic are updated by sampling a minibatch uniformly
+#from the buffer. Because DDPG is an off-policy algorithm, the replay buffer can be large, allowing
+#the algorithm to benefit from learning across a set of uncorrelated transitions.
+#
+#'''			
 class MemoryBuffer:
 
 	def __init__(self, size):
@@ -388,11 +389,11 @@ class MemoryBuffer:
 		self.len = 0
 
 	def sample(self, count):
-		"""
-		samples a random batch from the replay memory buffer
-		:param count: batch size
-		:return: batch (numpy array)
-		"""
+#		"""
+#		samples a random batch from the replay memory buffer
+#		:param count: batch size
+#		:return: batch (numpy array)
+#		"""
 		batch = []
 		count = min(count, self.len)
 		batch = random.sample(self.buffer, count)
@@ -408,14 +409,14 @@ class MemoryBuffer:
 		return self.len
 
 	def add(self, s, a, r, s1):
-		"""
-		adds a particular transaction in the memory buffer
-		:param s: current state
-		:param a: action taken
-		:param r: reward received
-		:param s1: next state
-		:return:
-		"""
+#		"""
+#		adds a particular transaction in the memory buffer
+#		:param s: current state
+#		:param a: action taken
+#		:param r: reward received
+#		:param s1: next state
+#		:return:
+#		"""
 		transition = (s,a,r,s1)
 		self.len += 1
 		if self.len > self.maxSize:
