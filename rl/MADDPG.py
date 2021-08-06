@@ -125,8 +125,7 @@ class Critic(nn.Module):
 	x = self.fc3(x)
         
         return x
-   
-############################################### ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 
 class Buffer:
     def __init__(self, args):
@@ -140,19 +139,19 @@ class Buffer:
             self.buffer['o_%d' % i] = np.empty([self.size, self.args.obs_shape[i]])
             self.buffer['u_%d' % i] = np.empty([self.size, self.args.action_shape[i]])
             self.buffer['r_%d' % i] = np.empty([self.size])
-            self.buffer['o_next_%d' % i] = np.empty([self.size, self.args.obs_shape[i]])
+            self.buffer['s2_%d' % i] = np.empty([self.size, self.args.obs_shape[i]])
         # thread lock
         self.lock = threading.Lock()
 
     # store the episode
-    def store_episode(self, o, u, r, o_next):
+    def store_episode(self, o, u, r, s2):
         idxs = self._get_storage_idx(inc=1)
         for i in range(self.args.n_agents):
             with self.lock:
-                self.buffer['o_%d' % i][idxs] = o[i]
+                self.buffer['s1_%d' % i][idxs] = o[i]
                 self.buffer['u_%d' % i][idxs] = u[i]
                 self.buffer['r_%d' % i][idxs] = r[i]
-                self.buffer['o_next_%d' % i][idxs] = o_next[i]
+                self.buffer['s2_%d' % i][idxs] = s2[i]
     
     # sample the data from the replay buffer
     def sample(self, batch_size):
@@ -230,53 +229,66 @@ class MADDPG:
         for target_param, param in zip(self.critic_target_network.parameters(), self.critic_network.parameters()):
             target_param.data.copy_((1 - self.args.tau) * target_param.data + self.args.tau * param.data)
 
-    def get_exploration_action(self, state, alpha_1):
-		"""
-		gets the action from actor added with exploration noise
-		:param state: state (Numpy array)
-		:return: sampled action (Numpy array)
-		"""
-		state = Variable(torch.from_numpy(state))
-		action = self.actor.forward(state).detach()
-		new_action = action + torch.from_numpy((self.noise.sample() * self.action_lim).astype(np.float32))
-		new_action = F.softmax(new_action/alpha_1, 0)
-		return new_action.data.numpy()
+    def get_exploitation_action(self, state,alpha_1):
+	"""
+	gets the action from target actor added with exploration noise
+	:param state: state (Numpy array)
+	:return: sampled action (Numpy array)
+	"""
+	state = Variable(torch.from_numpy(state))
+	action = self.target_actor.forward(state).detach()
+	action=F.softmax(action/alpha_1,0)
+	return action.data.numpy()
+
+    """ with noise """
+    #def get_exploration_action(self, state,alpha_1):
+        #"""
+       #gets the action from actor added with exploration noise
+	#:param state: state (Numpy array)
+	#:return: sampled action (Numpy array)
+	#"""
+	#state = Variable(torch.from_numpy(state))
+	#action = self.actor.forward(state).detach()
+	#new_action = action + torch.from_numpy((self.noise.sample() * self.action_lim).astype(np.float32))
+	#new_action = F.softmax(new_action/alpha_1, 0)
+	#return new_action.data.numpy()
+    
 
     # update the network
     def train(self, transitions, other_agents):
         for key in transitions.keys():
             transitions[key] = torch.tensor(transitions[key], dtype=torch.float32)
         r = transitions['r_%d' % self.agent_id]  # 训练时只需要自己的reward
-        o, u, o_next = [], [], []  # 用来装每个agent经验中的各项
+        s1, a1, s2 = [], [], []  # 用来装每个agent经验中的各项
         for agent_id in range(self.args.n_agents):
-            o.append(transitions['o_%d' % agent_id])
-            u.append(transitions['u_%d' % agent_id])
-            o_next.append(transitions['o_next_%d' % agent_id])
+            s1.append(transitions['o_%d' % agent_id])
+            a1.append(transitions['u_%d' % agent_id])
+            s2.append(transitions['s2_%d' % agent_id])
 
         # calculate the target Q value function
-        u_next = []
+        a2 = []
         with torch.no_grad():
             # 得到下一个状态对应的动作
             index = 0
             for agent_id in range(self.args.n_agents):
                 if agent_id == self.agent_id:
-                    u_next.append(self.actor_target_network(o_next[agent_id]))
+                    a2.append(self.actor_target_network(s2[agent_id]))
                 else:
                     # 因为传入的other_agents要比总数少一个，可能中间某个agent是当前agent，不能遍历去选择动作
-                    u_next.append(other_agents[index].policy.actor_target_network(o_next[agent_id]))
+                    a2.append(other_agents[index].policy.actor_target_network(s2[agent_id]))
                     index += 1
-            q_next = self.critic_target_network(o_next, u_next).detach()
+            next_val = self.critic_target_network(s2, a2).detach()
 
-            target_q = (r.unsqueeze(1) + self.args.gamma * q_next).detach()
+            y_expected = (r.unsqueeze(1) + self.args.gamma * next_val).detach()
 
         # the q loss
-        q_value = self.critic_network(o, u)
-        critic_loss = (target_q - q_value).pow(2).mean()
+        y_predicted = self.critic_network(s1, a1)
+        loss_critic = (y_expected - y_predicted).pow(2).mean()
 
         # the actor loss
         # 重新选择联合动作中当前agent的动作，其他agent的动作不变
-        u[self.agent_id] = self.actor_network(o[self.agent_id])
-        actor_loss = - self.critic_network(o, u).mean()
+        a1[self.agent_id] = self.actor_network(s1[self.agent_id])
+        actor_loss = - self.critic_network(s1, a1).mean()
         # if self.agent_id == 0:
         #     print('critic_loss is {}, actor_loss is {}'.format(critic_loss, actor_loss))
         # update the network
@@ -284,7 +296,7 @@ class MADDPG:
         actor_loss.backward()
         self.actor_optim.step()
         self.critic_optim.zero_grad()
-        critic_loss.backward()
+        loss_critic.backward()
         self.critic_optim.step()
 
         self._soft_update_target_network()
