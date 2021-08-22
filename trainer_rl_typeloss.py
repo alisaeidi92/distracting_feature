@@ -202,7 +202,7 @@ def main(args):
                 # print('---*******-----------',x.shape)
                 pred_train, pred_meta= model(x)              ##applying model to x where x is from training data
             else:
-                print('---*******-----------',x.shape)
+                # print('---*******-----------',x.shape)
                 pred_train = model(x)                        ##x is images y is actual label/category
             loss_ = F.nll_loss(pred_train, y,reduce=False)     ##calculating loss occurred while training
             loss=loss_.mean() if not args.type_loss else loss_.mean()+10*loss_fn(pred_meta,meta)##If your loss is not a scalar value, then you should certainly use either 

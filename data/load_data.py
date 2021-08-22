@@ -37,8 +37,8 @@ class Dataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.data_files)
 def load_data(args, data_split):
-    print('--------')
-    print(args.datapath)
+    # print('--------')
+    # print(args.datapath)
     data_files = []
     # data_dir = '../process_data/reason_data/reason_data/RAVEN-10000/'
     # data_dir = str(args.datapath)[0:-5]
@@ -55,7 +55,7 @@ def load_data(args, data_split):
     df = [data_file for data_file in data_files if data_split in data_file and "npz" in data_file][:]
 
     #data_files = [data_file for data_file in data_files if data_split in data_file]
-    print("Nums of "+data_split+" : ", len(df))
+    # print("Nums of "+data_split+" : ", len(df))
     # train_loader = torch.utils.data.DataLoader(Dataset(train_files), batch_size=args.batch_size, shuffle=True,num_workers=args.numwork)#
     loader = torch.utils.data.DataLoader(Dataset(args,df), batch_size=args.batch_size, num_workers=args.numwork)
     return loader
