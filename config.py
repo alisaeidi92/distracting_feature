@@ -54,5 +54,5 @@ def get_args():
     else:
         setattr(args, 'cuda', False)
     if len(unparsed) > 1:
-        logger.info("Unparsed args: "+unparsed)
+        logger.info("Unparsed args: "+str(unparsed))
     return args, unparsed

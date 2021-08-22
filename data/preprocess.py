@@ -163,20 +163,27 @@ def provide_data(regime, n,a,s):
     #        'PROGRESSION', "XOR", "OR", 'AND', 'CONSISTENT_UNION']
     base=4000
     data_files=[]
-    data_dir = '/home/lab/zkc/reason/process_data/reason_data/reason_data/RAVEN-10000/'
+    # data_dir = '/home/lab/zkc/reason/process_data/reason_data/reason_data/RAVEN-10000/'
+    data_dir = '/Users/sukhvirsingh/Desktop/RAVEN/dataset/'
     for subdir in os.listdir(data_dir):
-
-        for filename in os.listdir(data_dir + subdir):
-            if "npz" in filename and "train" in filename:
-                data_files.append(data_dir+subdir+"/"+filename)
+        if os.path.isdir(data_dir + subdir):
+            for filename in os.listdir(data_dir + subdir):
+                if "npz" in filename and "train" in filename:
+                    data_files.append(data_dir+subdir+"/"+filename)
+                    # print(filename)
 
 
     train_files=[[] for _ in range(n)]
+    # print('------ data_files in provide_data')
     for data_file in data_files:
-        name_=data_file[:-4].split("/")[-1].split("_")[3:]
+        # print(data_file)
+        # name_=data_file[:-4].split("/")[-1].split("_")[3:]
+        name_ = data_file[:-4].split("/")[-1].split("_")[1]
+        # print(name_)
         for number_ in name_:
+            # print(number_)
             train_files[int(number_)].append(data_file)
-
+    # print('train_files in provide_data', train_files)
 
     df=[]
     for i in range(n):

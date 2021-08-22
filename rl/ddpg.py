@@ -1,3 +1,24 @@
+from __future__ import division
+
+import os
+
+import gc
+import numpy as np
+import random
+from collections import deque
+import numpy as np
+import torch
+import shutil
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import numpy as np
+from torch.autograd import Variable
+import numpy as np
+import math
+import model
+
+
 """
 
 HOW DOES DDPG WORK?
@@ -28,26 +49,6 @@ using deep function approximators that can learn policies in high-dimensional, c
 
 """
 
-
-from __future__ import division
-
-import os
-
-import gc
-import numpy as np
-import random
-from collections import deque
-import numpy as np
-import torch
-import shutil
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import numpy as np
-from torch.autograd import Variable
-import numpy as np
-import math
-import model
 
 BATCH_SIZE = 128        # Input Batch size
 LEARNING_RATE = 0.001	# Initial Learning Rate

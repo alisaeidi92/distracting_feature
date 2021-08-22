@@ -37,13 +37,18 @@ class Dataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.data_files)
 def load_data(args, data_split):
+    print('--------')
+    print(args.datapath)
     data_files = []
-    data_dir = '../process_data/reason_data/reason_data/RAVEN-10000/'
+    # data_dir = '../process_data/reason_data/reason_data/RAVEN-10000/'
+    # data_dir = str(args.datapath)[0:-5]
+    data_dir = args.datapath
     for subdir in os.listdir(data_dir):
-
-        for filename in os.listdir(data_dir + subdir):
-            if "npz" in filename:
-                data_files.append(data_dir + subdir + "/" + filename)
+        if os.path.isdir(data_dir + subdir):
+            for filename in os.listdir(data_dir + subdir):
+                # print('----', filename)
+                if "npz" in filename:
+                    data_files.append(data_dir + subdir + "/" + filename)
 
 
 

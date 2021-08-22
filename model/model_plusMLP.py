@@ -136,7 +136,8 @@ class WildRelationNet(nn.Module):
         batch_size = x.shape[0]
 
         # placeholder for panel embeddings
-        panel_embeddings = torch.zeros(batch_size, self.NUM_PANELS, 256).cuda()
+        # panel_embeddings = torch.zeros(batch_size, self.NUM_PANELS, 256).cuda()
+        panel_embeddings = torch.zeros(batch_size, self.NUM_PANELS, 256)
 
         # get one embedding of all 8 context panel (combined)
         panel_embedding_8 = self.cnn_global(x[:, 0:8, :, :])
@@ -168,7 +169,8 @@ class WildRelationNet(nn.Module):
         context_g_out = context_g_out.sum(1)
 
         # placeholder for f-scores
-        f_out = torch.zeros(batch_size, int(self.NUM_PANELS/2)).cuda()
+        # f_out = torch.zeros(batch_size, int(self.NUM_PANELS/2)).cuda()
+        f_out = torch.zeros(batch_size, int(self.NUM_PANELS/2))
 
         for answer_ind in range(8):
             answer_embedding = answer_embeddings[:, answer_ind, :] # (batch_size, 256)

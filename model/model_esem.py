@@ -151,9 +151,12 @@ class esem(nn.Module):
 
     # outputs row, col, and other triplets that dont need an answer panel
     def panel_comp_obj_pairs(self, objs, batch_size):
-        obj_pairses_r =torch.zeros(batch_size, 2, 256*3).cuda()
-        obj_pairses_c = torch.zeros(batch_size, 2, 256 * 3).cuda()
-        obj_pairses= torch.zeros(batch_size, 54, 256 * 3).cuda()
+        # obj_pairses_r =torch.zeros(batch_size, 2, 256*3).cuda()
+        # obj_pairses_c = torch.zeros(batch_size, 2, 256 * 3).cuda()
+        # obj_pairses= torch.zeros(batch_size, 54, 256 * 3).cuda()
+        obj_pairses_r =torch.zeros(batch_size, 2, 256*3)
+        obj_pairses_c = torch.zeros(batch_size, 2, 256 * 3)
+        obj_pairses= torch.zeros(batch_size, 54, 256 * 3)
 
         count=0
         index=0
@@ -184,10 +187,13 @@ class esem(nn.Module):
     # ans: answer panel embedidng
     # pan: embeddings of context panels
     def ans_comp_obj_pairs(self, ans, pan, batch_size):
-        obj_pairses_r = torch.zeros(batch_size, 1, 256 * 3).cuda()
-        obj_pairses_c = torch.zeros(batch_size, 1, 256 * 3).cuda()
+        # obj_pairses_r = torch.zeros(batch_size, 1, 256 * 3).cuda()
+        # obj_pairses_c = torch.zeros(batch_size, 1, 256 * 3).cuda()
+        obj_pairses_r = torch.zeros(batch_size, 1, 256 * 3)
+        obj_pairses_c = torch.zeros(batch_size, 1, 256 * 3)
 
-        obj_pairses=torch.zeros(batch_size, 26, 256*3).cuda()
+        # obj_pairses=torch.zeros(batch_size, 26, 256*3).cuda()
+        obj_pairses=torch.zeros(batch_size, 26, 256*3)
         count=0
         for i in range(8):
             for j in range(i):
@@ -236,7 +242,8 @@ class esem(nn.Module):
 
         batch_size = x.shape[0]
         # Compute panel embeddings
-        panel_embeddings = torch.zeros(batch_size, self.NUM_PANELS, 256).cuda()
+        # panel_embeddings = torch.zeros(batch_size, self.NUM_PANELS, 256).cuda()
+        panel_embeddings = torch.zeros(batch_size, self.NUM_PANELS, 256)
 
         # get panel embedding of all line panels
         panel_embedding_8 = self.cnn_global(x[:, 16:, :, :])
@@ -270,7 +277,8 @@ class esem(nn.Module):
         context_g_out = context_g_out1 + context_g_outc + context_g_outr
 
         # placeholder for f-scores
-        f_out = torch.zeros(batch_size, int(self.NUM_PANELS/2)).cuda()
+        # f_out = torch.zeros(batch_size, int(self.NUM_PANELS/2)).cuda()
+        f_out = torch.zeros(batch_size, int(self.NUM_PANELS/2))
         
         num_context_pairs = 28
 

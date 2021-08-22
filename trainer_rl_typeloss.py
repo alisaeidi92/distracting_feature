@@ -14,6 +14,7 @@ from rl.help_function import *                   ##using rl folder
 from rl.qlearning import *                       ##using rl folder
 import utils                                   ##for image summary
 from tensorboard import TensorBoard
+from model.model_transformer import MyTransformer
 
 ##Class labels: Different categories(actions) (logic combn of class) of training sample in the dataset ex: fig1. "position and" 
 code = ['shape', 'line', "color", 'number', 'position', 'size',                  
@@ -93,7 +94,9 @@ def main(args):
     if args.net == 'Reab3p16':                ##if want to use model Reab3p16
         model = Reab3p16(args)
     elif args.net=='RN_mlp':                  ##if want to use model WildRelationNet
-        model =WildRelationNet()
+        model = WildRelationNet()
+    elif args.net == 'transformer':
+        model = MyTransformer(args)
     if args.gpunum > 1:                        
         model = nn.DataParallel(model, device_ids=range(args.gpunum)) ##The nn package defines a set of Modules, which you can think of as a neural network layer that has produces output from 
                                                                        ##input and may have some trainable weights.
@@ -127,7 +130,7 @@ def main(args):
 
 ##A very popular technique that is used along with SGD is called Momentum. Instead of using only the gradient of the current 
 ##step to guide the search, momentum also accumulates the gradient of the past steps to determine the direction to go
-    model.cuda()
+    # model.cuda()
     optimizer = optim.SGD(model.parameters(), lr=args.lr,momentum=args.mo, weight_decay=5e-4) ##Adam has convergence problems that often SGD + momentum can converge better 
                                                                                ##with longer training time. We often see a lot of papers in 2018 and 2019 were still using SGD
     if args.gpunum>1:
@@ -154,14 +157,22 @@ def main(args):
     best_acc=0.0                                                ##setting accuracy to 0.0
     while True:                                                ##loop(train)  until
         since=time.time()
-        print(action_)                                            
+        # print(action_)                                            
         for i in range(style_raven_len):                
             tb.scalar_summary("action/a"+str(i), action_[i], epoch_count) ##saving summary such as poch counts and actions
 
+        # print('regime:',args.regime)
+        # print('style_raven_len', style_raven_len)
+        # print('action_:', action_)
+        # print('style_raven:', style_raven)
         data_files = preprocess.provide_data(args.regime, style_raven_len, action_,style_raven) 
+        # print('------data files')
+        # print('data_files:', data_files)
 
-        train_files = [data_file for data_file in data_files if 'train' in data_file]               #creating a list of training files
-        print("train_num:", len(train_files))
+        # ------------ PROBLEM: no training files are being loaded ----------------
+        train_files = [data_file for data_file in data_files if 'train' in data_file]    
+        # print('traing_files:', train_files)           #creating a list of training files
+        # print("train_num:", len(train_files))
     
         ##torch.utils.data.DataLoader` supports both map-style and iterable-style datasets with single- or multi-process loading,
         ##customizing loading order and optional automatic batching (collation) and memory pinning
@@ -178,14 +189,20 @@ def main(args):
             if x.shape[0]<10:                             ##x.shape[0] will give the number of rows in an array  (10 by 1024 2D array)                 
                 print(x.shape[0])
                 break                                                            
-            x, y ,meta = Variable(x).cuda(), Variable(y).cuda(), Variable(me).cuda()  ##Components are accessible as variable.x,  variable.y,  variable.z
+            # x, y ,meta = Variable(x).cuda(), Variable(y).cuda(), Variable(me).cuda()  ##Components are accessible as variable.x,  variable.y,  variable.z
+            x, y, meta = Variable(x), Variable(y), Variable(me)
+            if(x.shape[0] != args.batch_size):
+                continue
+            # print('full batch_size:', x.shape[0] == args.batch_size, '(',args.batch_size,')')
             if args.gpunum > 1:                                                        
                 optimizer.module.zero_grad()             ##to set the gradient of the parameters in the model to 0, module beacause DataParallel
             else:
                 optimizer.zero_grad()                    ## same as above set the gradient of the parameters to zero
             if args.type_loss:
+                # print('---*******-----------',x.shape)
                 pred_train, pred_meta= model(x)              ##applying model to x where x is from training data
             else:
+                print('---*******-----------',x.shape)
                 pred_train = model(x)                        ##x is images y is actual label/category
             loss_ = F.nll_loss(pred_train, y,reduce=False)     ##calculating loss occurred while training
             loss=loss_.mean() if not args.type_loss else loss_.mean()+10*loss_fn(pred_meta,meta)##If your loss is not a scalar value, then you should certainly use either 
