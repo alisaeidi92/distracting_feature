@@ -53,7 +53,8 @@ def averagenum(num):
         nsum += num[i]
     return nsum / len(num)
 
-##Learning Rate is an important hyperparameter in Gradient Descent. Its value determines how fast the Neural Network would..
+##Learning Rate is an important hyperpa
+eter in Gradient Descent. Its value determines how fast the Neural Network would..
 ##converge to minima. Function to adjust the larning rate
 def adjust_learning_rate(optimizer, epoch, lr_steps,n):
     """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
@@ -283,12 +284,14 @@ def main(args):
             alpha_1+=0.005#0.1
         if epoch_count > 1:                                ##saving  last state and current state ,reward in memory  for epoch >1
             if args.rl_style == "dqn":dqn.store_transition(last_state, a, reward , cur_state)
-            elif args.rl_style == "ddpg":ram.add(last_state, a, reward, cur_state)    
+            elif args.rl_style == "ddpg":ram.add(last_state, a, reward, cur_state)
+            elif args.rl_style == "maddpg":ram.store_episode(last_state, a, reward, cur_state)
 
 
         if epoch_count > 1:
             if args.rl_style == "dqn":dqn.learn()
             elif args.rl_style == "ddpg":loss_actor, loss_critic=ddpg.optimize()      ##using rl ddpg model's optimize function to for teaching
+            elif args.rl_style == "maddpg":loss_actor, loss_critic=maddpg.train()
             print('------------------------------------')
             print('learn q learning')
             print('------------------------------------')
