@@ -148,7 +148,7 @@ class Buffer:
         idxs = self._get_storage_idx(inc=1)
         for i in range(self.args.n_agents):
             with self.lock:
-                self.buffer['s1_%d' % i][idxs] = o[i]
+                self.buffer['o_%d' % i][idxs] = o[i]
                 self.buffer['u_%d' % i][idxs] = u[i]
                 self.buffer['r_%d' % i][idxs] = r[i]
                 self.buffer['s2_%d' % i][idxs] = s2[i]
@@ -261,8 +261,8 @@ class MADDPG:
         r = transitions['r_%d' % self.agent_id]  # 训练时只需要自己的reward
         s1, a1, s2 = [], [], []  # 用来装每个agent经验中的各项
         for agent_id in range(self.args.n_agents):
-            s1.append(transitions['o_%d' % agent_id])
-            a1.append(transitions['u_%d' % agent_id])
+            s1.append(transitions['s1_%d' % agent_id])
+            a1.append(transitions['a1_%d' % agent_id])
             s2.append(transitions['s2_%d' % agent_id])
 
         # calculate the target Q value function
@@ -303,6 +303,7 @@ class MADDPG:
         if self.train_step > 0 and self.train_step % self.args.save_rate == 0:
             self.save_model(self.train_step)
         self.train_step += 1
+	return actor_loss.data.numpy(), loss_critic.data.numpy()
 
     def save_model(self, train_step):
         num = str(train_step // self.args.save_rate)
