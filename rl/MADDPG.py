@@ -314,7 +314,7 @@ class MADDPG:
         torch.save(self.actor_network.state_dict(), model_path + '/' + num + '_actor_params.pkl')
         torch.save(self.critic_network.state_dict(),  model_path + '/' + num + '_critic_params.pkl')
         
-	
+"""	
 	
 if __name__ == '__main__':
 
@@ -390,3 +390,4 @@ if __name__ == '__main__':
 
 
 	print ('Completed episodes')
+"""
