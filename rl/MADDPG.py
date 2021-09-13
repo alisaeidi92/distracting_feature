@@ -178,18 +178,21 @@ class Buffer:
 
 class MADDPG:
 	
-    def __init__(self, args, agent_id):  # 因为不同的agent的obs、act维度可能不一样，所以神经网络不同,需要agent_id来区分
-        self.args = args
+    def __init__(self, state_dim, action_dim, action_lim, ram, agent_id):  # 因为不同的agent的obs、act维度可能不一样，所以神经网络不同,需要agent_id来区分
+        self.state_dim = state_dim
+	self.action_dim = action_dim
+	self.action_lim = 1
+	self.ram = ram
         self.agent_id = agent_id
         self.train_step = 0
 
         # create the network
-        self.actor_network = Actor(args, agent_id)
-        self.critic_network = Critic(args)
+        self.actor_network = Actor(self.state_dim, self.action_dim, self.action_lim, agent_id)
+        self.critic_network = Critic(self.state_dim, self.action_dim)
 
         # build up the target network
-        self.actor_target_network = Actor(args, agent_id)
-        self.critic_target_network = Critic(args)
+        self.actor_target_network = Actor(self.state_dim, self.action_dim, self.action_lim, agent_id)
+        self.critic_target_network = Critic(self.state_dim, self.action_dim)
 
         # load the weights into the target networks
         self.actor_target_network.load_state_dict(self.actor_network.state_dict())
@@ -210,7 +213,7 @@ class MADDPG:
         if not os.path.exists(self.model_path):
             os.mkdir(self.model_path)
 
-        # 加载模型
+        # Load the model
         if os.path.exists(self.model_path + '/actor_params.pkl'):
             self.actor_network.load_state_dict(torch.load(self.model_path + '/actor_params.pkl'))
             self.critic_network.load_state_dict(torch.load(self.model_path + '/critic_params.pkl'))
@@ -256,8 +259,8 @@ class MADDPG:
     def train(self, transitions, other_agents):
         for key in transitions.keys():
             transitions[key] = torch.tensor(transitions[key], dtype=torch.float32)
-        r = transitions['r_%d' % self.agent_id]  # 训练时只需要自己的reward
-        s1, a1, s2 = [], [], []  # 用来装每个agent经验中的各项
+        r = transitions['r_%d' % self.agent_id]  # You only need your own reward during training
+        s1, a1, s2 = [], [], []  # Used to install the various items in each agent's experience
         for agent_id in range(self.args.n_agents):
             s1.append(transitions['s1_%d' % agent_id])
             a1.append(transitions['a1_%d' % agent_id])
@@ -266,13 +269,14 @@ class MADDPG:
         # calculate the target Q value function
         a2 = []
         with torch.no_grad():
-            # 得到下一个状态对应的动作
+            # Get the action corresponding to the next state
             index = 0
             for agent_id in range(self.args.n_agents):
                 if agent_id == self.agent_id:
                     a2.append(self.actor_target_network(s2[agent_id]))
                 else:
-                    # 因为传入的other_agents要比总数少一个，可能中间某个agent是当前agent，不能遍历去选择动作
+                    # Because the incoming other_agents is one less than the total number, 
+		    # it is possible that an agent in the middle is the current agent and cannot be traversed to select actions
                     a2.append(other_agents[index].policy.actor_target_network(s2[agent_id]))
                     index += 1
             next_val = self.critic_target_network(s2, a2).detach()
@@ -284,7 +288,7 @@ class MADDPG:
         loss_critic = (y_expected - y_predicted).pow(2).mean()
 
         # the actor loss
-        # 重新选择联合动作中当前agent的动作，其他agent的动作不变
+        # Reselect the action of the current agent in the joint action, and the actions of other agents remain unchanged
         a1[self.agent_id] = self.actor_network(s1[self.agent_id])
         actor_loss = - self.critic_network(s1, a1).mean()
         # if self.agent_id == 0:
