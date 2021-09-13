@@ -27,7 +27,6 @@ def get_args():
     parser.add_argument("--noise_rate", type=float, default=0.1, help="noise rate for sampling from a standard normal distribution ")
     parser.add_argument("--gamma", type=float, default=0.95, help="discount factor")
     parser.add_argument("--tau", type=float, default=0.01, help="parameter for updating the target network")
-    parser.add_argument("--buffer-size", type=int, default=int(5e5), help="number of transitions can be stored in buffer")
     parser.add_argument("--batch-size", type=int, default=256, help="number of episodes to optimize at the same time")
     # Checkpointing
     parser.add_argument("--save-dir", type=str, default="./model", help="directory in which training state and model should be saved")
@@ -128,9 +127,8 @@ class Critic(nn.Module):
 
 
 class Buffer:
-    def __init__(self, args):
-        self.size = args.buffer_size
-        self.args = args
+    def __init__(self, size):
+        self.size = size
         # memory management
         self.current_size = 0
         # create the buffer to store info
@@ -335,7 +333,7 @@ if __name__ == '__main__':
 	print (' Action Dimensions :- ', A_DIM)
 	print (' Action Max :- ', A_MAX)
 
-	ram = MemoryBuffer(MAX_BUFFER)			#reply buffer
+	ram = Buffer(MAX_BUFFER)			#reply buffer
 	trainer = Trainer(S_DIM, A_DIM, A_MAX, ram)	#trainer based on state, action space and memory
 
 	for _ep in range(MAX_EPISODES):
