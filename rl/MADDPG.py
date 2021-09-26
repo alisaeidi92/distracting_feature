@@ -242,17 +242,17 @@ class MADDPG:
 	return action.data.numpy()
 
     """ with noise """
-    #def get_exploration_action(self, state,alpha_1):
-        #"""
+    def get_exploration_action(self, state,alpha_1):
+        """
        #gets the action from actor added with exploration noise
 	#:param state: state (Numpy array)
 	#:return: sampled action (Numpy array)
-	#"""
-	#state = Variable(torch.from_numpy(state))
-	#action = self.actor.forward(state).detach()
-	#new_action = action + torch.from_numpy((self.noise.sample() * self.action_lim).astype(np.float32))
-	#new_action = F.softmax(new_action/alpha_1, 0)
-	#return new_action.data.numpy()
+	"""
+	state = Variable(torch.from_numpy(state))
+	action = self.actor.forward(state).detach()
+	new_action = action + torch.from_numpy((self.noise.sample() * self.action_lim).astype(np.float32))
+	new_action = F.softmax(new_action/alpha_1, 0)
+	return new_action.data.numpy()
     
 
     # update the network
