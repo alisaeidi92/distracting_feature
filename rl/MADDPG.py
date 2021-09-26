@@ -256,7 +256,7 @@ class MADDPG:
     
 
     # update the network
-    def train(self, transitions, other_agents):
+    def optimize(self, transitions, other_agents):
         for key in transitions.keys():
             transitions[key] = torch.tensor(transitions[key], dtype=torch.float32)
         r = transitions['r_%d' % self.agent_id]  # You only need your own reward during training
