@@ -124,12 +124,12 @@ class MyTransformer(nn.Module):
     # outputs row, col, and other triplets that don't include an answer panel
     # objs: context panels
     def panel_comp_obj_pairs(self, objs, batch_size):
-        # obj_pairses_r = torch.zeros(batch_size, 2, 256 * 3).cuda()
-        # obj_pairses_c = torch.zeros(batch_size, 2, 256 * 3).cuda()
-        # obj_pairses = torch.zeros(batch_size, 54, 256 * 3).cuda()
-        obj_pairses_r = torch.zeros(batch_size, 2, 256 * 3)
-        obj_pairses_c = torch.zeros(batch_size, 2, 256 * 3)
-        obj_pairses = torch.zeros(batch_size, 54, 256 * 3)
+        obj_pairses_r = torch.zeros(batch_size, 2, 256 * 3).cuda()
+        obj_pairses_c = torch.zeros(batch_size, 2, 256 * 3).cuda()
+        obj_pairses = torch.zeros(batch_size, 54, 256 * 3).cuda()
+        # obj_pairses_r = torch.zeros(batch_size, 2, 256 * 3)
+        # obj_pairses_c = torch.zeros(batch_size, 2, 256 * 3)
+        # obj_pairses = torch.zeros(batch_size, 54, 256 * 3)
 
         count=0
         index=0
@@ -161,12 +161,12 @@ class MyTransformer(nn.Module):
     # ans: answer panel embedding
     # pan: embeddings of context panels
     def ans_comp_obj_pairs(self, ans, pan, batch_size):
-        # obj_pairses_r = torch.zeros(batch_size, 1, 256 * 3).cuda()
-        # obj_pairses_c = torch.zeros(batch_size, 1, 256 * 3).cuda()
-        # obj_pairses = torch.zeros(batch_size, 26, 256 * 3).cuda()
-        obj_pairses_r = torch.zeros(batch_size, 1, 256 * 3)
-        obj_pairses_c = torch.zeros(batch_size, 1, 256 * 3)
-        obj_pairses = torch.zeros(batch_size, 26, 256 * 3)
+        obj_pairses_r = torch.zeros(batch_size, 1, 256 * 3).cuda()
+        obj_pairses_c = torch.zeros(batch_size, 1, 256 * 3).cuda()
+        obj_pairses = torch.zeros(batch_size, 26, 256 * 3).cuda()
+        # obj_pairses_r = torch.zeros(batch_size, 1, 256 * 3)
+        # obj_pairses_c = torch.zeros(batch_size, 1, 256 * 3)
+        # obj_pairses = torch.zeros(batch_size, 26, 256 * 3)
 
         count=0
         for i in range(8):
@@ -234,8 +234,8 @@ class MyTransformer(nn.Module):
         # print('((((((((( x.shape:', x.shape)
 
         # placeholder for panel embeddings
-        # panel_embeddings = torch.zeros(batch_size, self.NUM_PANELS, 256).cuda()
-        panel_embeddings = torch.zeros(batch_size, self.NUM_PANELS, 256)
+        panel_embeddings = torch.zeros(batch_size, self.NUM_PANELS, 256).cuda()
+        # panel_embeddings = torch.zeros(batch_size, self.NUM_PANELS, 256)
 
         # an embedding of all panels (the yellow embedding in the diagram)
         panel_embedding_8 = self.cnn_global(x[:, :, :, :])
@@ -272,13 +272,13 @@ class MyTransformer(nn.Module):
         context_g_out = context_g_out1 + context_g_outc + context_g_outr
 
         # placeholder for f-scores
-        # f_out = torch.zeros(batch_size, int(self.NUM_PANELS/2)).cuda()
-        f_out = torch.zeros(batch_size, int(self.NUM_PANELS/2))
+        f_out = torch.zeros(batch_size, int(self.NUM_PANELS/2)).cuda()
+        # f_out = torch.zeros(batch_size, int(self.NUM_PANELS/2))
 
         # placeholder for type loss
         if self.type_loss:
-            # f_meta=torch.zeros(batch_size, 512).cuda()
-            f_meta=torch.zeros(batch_size, 512)
+            f_meta=torch.zeros(batch_size, 512).cuda()
+            # f_meta=torch.zeros(batch_size, 512)
 
         for answer_ind in range(8):
             # get individual answer panel embedding
@@ -405,17 +405,17 @@ class VisionTransformer(nn.Module):
         image_height, image_width = pair(image_size)
         patch_height, patch_width = pair(patch_size)
 
-        # print('patch_height:', patch_height)
-        # print('patch_width:', patch_width)
-        # print('patch_size:', patch_size)
-        # print('image dims:',image_height, '-', image_width)
-        # print()
+        print('patch_height:', patch_height)
+        print('patch_width:', patch_width)
+        print('patch_size:', patch_size)
+        print('image dims:',image_height, '-', image_width)
+        print()
 
         assert image_height % patch_height == 0 and image_width % patch_width == 0, 'Image dimensions must be divisible by the patch size.'
 
         num_patches = (image_height // patch_height) * (image_width // patch_width)
         patch_dim = channels * patch_height * patch_width
-        # print('--patch_dim', patch_dim)
+        print('--patch_dim', patch_dim)
         # patch_dim = patch_dim * 2
 
 
