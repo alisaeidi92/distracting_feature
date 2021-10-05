@@ -9,7 +9,8 @@ from data.load_data import load_data,Dataset    ##using data folder ,also import
 from data import preprocess                      ##using data folder
 from model.model_b3_p import Reab3p16            ##using model folder
 from model.model_plusMLP import WildRelationNet   
-from rl.ddpg import *                            ##using rl folder
+from rl.ddpg import *                             ##using rl folder
+from rl.MADDPG import *
 from rl.help_function import *                   ##using rl folder
 from rl.qlearning import *                       ##using rl folder
 import utils                                   ##for image summary
@@ -307,7 +308,15 @@ def main(args):
         if epoch_count > 1:
             if args.rl_style == "dqn":dqn.learn()
             elif args.rl_style == "ddpg":loss_actor, loss_critic=ddpg.optimize()      ##using rl ddpg model's optimize function to for teaching
-            elif args.rl_style == "maddpg":loss_actor, loss_critic=maddpg.optimize()
+            elif args.rl_style == "maddpg":
+                losses = []
+                transitions = Buffer.sample(args.batch_size)
+                for agent in self.agents:
+                    other_agents = agents.copy()
+                    other_agents.remove(agent)
+                    loss_actor, loss_critic = agent.optimize(transitions, other_agents)
+                    losses.append([loss_actor, loss_critic])
+                
             print('------------------------------------')
             print('learn q learning')
             print('------------------------------------')
