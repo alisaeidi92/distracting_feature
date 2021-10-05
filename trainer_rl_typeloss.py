@@ -239,7 +239,6 @@ def main(args):
                       epoch_count, iter_c, iter_epoch, loss, accuracy_total))
                 tb.scalar_summary("train_loss",loss,iter_count)               ##saving train loss to summary
                 
-        self.epsilon = max(0.05, self.epsilon - 0.0000005)
         loss_train=loss_train/len(train_files)                             ##The average of the batch losses will give you an estimate of the “epoch loss” during training.
         #mean_pred_train=[x[0]/ x[1] for x in mean_pred_train]
         mean_loss_train=[x[0]/ x[1] for x in mean_loss_train]
