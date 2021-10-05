@@ -174,7 +174,7 @@ class Buffer:
         if inc == 1:
             idx = idx[0]
         return idx
-    
+"""    
 class OrnsteinUhlenbeckActionNoise:
 
 	def __init__(self, action_dim, mu = 0, theta = 0.15, sigma = 0.2):
@@ -192,7 +192,7 @@ class OrnsteinUhlenbeckActionNoise:
 		dx = dx + self.sigma * np.random.randn(len(self.X))
 		self.X = self.X + dx
 		return self.X
-	
+"""
 	
 class MADDPG:
 	
@@ -203,7 +203,7 @@ class MADDPG:
 	self.ram = ram
         self.agent_id = agent_id
         self.train_step = 0
-	self.noise = OrnsteinUhlenbeckActionNoise(self.action_dim)
+	#self.noise = OrnsteinUhlenbeckActionNoise(self.action_dim)
 
         # create the network
         self.actor_network = Actor(self.state_dim, self.action_dim, self.action_lim, agent_id)
@@ -248,31 +248,31 @@ class MADDPG:
 
         for target_param, param in zip(self.critic_target_network.parameters(), self.critic_network.parameters()):
             target_param.data.copy_((1 - self.args.tau) * target_param.data + self.args.tau * param.data)
-
+    """
     def get_exploitation_action(self, state,alpha_1):
-	"""
-	gets the action from target actor added with exploration noise
-	:param state: state (Numpy array)
-	:return: sampled action (Numpy array)
-	"""
+	
+	#gets the action from target actor added with exploration noise
+	#:param state: state (Numpy array)
+	#:return: sampled action (Numpy array)
+	
 	state = Variable(torch.from_numpy(state))
 	action = self.target_actor.forward(state).detach()
 	action=F.softmax(action/alpha_1,0)
 	return action.data.numpy()
 
-    """ with noise """
+
     def get_exploration_action(self, state,alpha_1):
-        """
-       #gets the action from actor added with exploration noise
+
+        #gets the action from actor added with exploration noise
 	#:param state: state (Numpy array)
 	#:return: sampled action (Numpy array)
-	"""
+
 	state = Variable(torch.from_numpy(state))
 	action = self.actor.forward(state).detach()
 	new_action = action + torch.from_numpy((self.noise.sample() * self.action_lim).astype(np.float32))
 	new_action = F.softmax(new_action/alpha_1, 0)
 	return new_action.data.numpy()
-    
+    """    
 
     # update the network
     def optimize(self, transitions, other_agents):
