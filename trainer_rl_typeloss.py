@@ -285,13 +285,16 @@ def main(args):
         reward=np.mean(acc_part_val)*100-baseline_rl          ##calculating reward using val accuracy
         tb.scalar_summary("valreward", reward,epoch_count)        ##saving summary
         action_list=[x for x in a]
-        cur_'=np.array(acc_part_val+acc_part_train+action_list+mean_loss_train ##saving all calc in currnt state
+        cur_state=np.array(acc_part_val+acc_part_train+action_list+mean_loss_train ##saving all calc in currnt state
                            +[loss_train]+[epoch_count]).astype(np.float32)
         #np.expand_dims(, axis=0)
         if args.rl_style == "dqn":
             a = dqn.choose_action(cur_state)  # TODO
         elif args.rl_style == "ddpg":                              ##passing current state to rl model's get_exploration_action
             a = ddpg.get_exploration_action(cur_state,alpha_1)
+        elif args.rl_style == "maddpg":
+            for agent_id, agent in enumerate(agents):
+                a = agent.select_action(s[agent_id], noise, epsilon)
 
         if alpha_1<1:
             alpha_1+=0.005#0.1
