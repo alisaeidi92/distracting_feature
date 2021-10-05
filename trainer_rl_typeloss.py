@@ -295,7 +295,7 @@ def main(args):
         if epoch_count > 1:
             if args.rl_style == "dqn":dqn.learn()
             elif args.rl_style == "ddpg":loss_actor, loss_critic=ddpg.optimize()      ##using rl ddpg model's optimize function to for teaching
-            elif args.rl_style == "maddpg":loss_actor, loss_critic=maddpg.train()
+            elif args.rl_style == "maddpg":loss_actor, loss_critic=maddpg.optimize()
             print('------------------------------------')
             print('learn q learning')
             print('------------------------------------')
@@ -317,7 +317,7 @@ def main(args):
         epoch_count += 1                                                         ##increasing  epoch count by 1
         if epoch_count%20==0:              ##Do this for 20 epochs for complete dataset 
             print("save weights")
-            ddpg.save_models(args.model_dir+'/',epoch_count )                  ##saving the model
+            madddpg.save_model(epoch_count)                  ##saving the model
             save_state(model.state_dict(), args.model_dir+"/epoch"+str(epoch_count))
         #if epoch_count == 400:
         #        print(f"we have reached to epoch {epoch_count}!")
