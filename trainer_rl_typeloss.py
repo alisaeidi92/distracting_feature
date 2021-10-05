@@ -158,6 +158,7 @@ def main(args):
         action_ = maddpg.get_exploration_action(np.zeros([style_raven_len*4+2]).astype(np.float32),alpha_1)
     if args.type_loss:loss_fn=nn.BCELoss()                      ##Creates a criterion that measures the Binary Cross Entropy between the target and the output.
     best_acc=0.0                                                ##setting accuracy to 0.0
+    self.epsilon = 0.1
     while True:                                                ##loop(train)  until
         since=time.time()
         print(action_)                                            
@@ -227,6 +228,8 @@ def main(args):
                       ('train_epoch:%d,iter_count:%d/%d, loss:%.3f, acc:%.1f') % (
                       epoch_count, iter_c, iter_epoch, loss, accuracy_total))
                 tb.scalar_summary("train_loss",loss,iter_count)               ##saving train loss to summary
+                
+        self.epsilon = max(0.05, self.epsilon - 0.0000005)
         loss_train=loss_train/len(train_files)                             ##The average of the batch losses will give you an estimate of the “epoch loss” during training.
         #mean_pred_train=[x[0]/ x[1] for x in mean_pred_train]
         mean_loss_train=[x[0]/ x[1] for x in mean_loss_train]
