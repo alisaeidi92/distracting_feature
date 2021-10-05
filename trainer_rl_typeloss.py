@@ -146,7 +146,8 @@ def main(args):
         ram = MemoryBuffer(1000)   
         ddpg = Trainer(style_raven_len*4+2, style_raven_len, 1, ram)        ##creating an instance of Trainer class defined  in rl folder (ddpg.py) why style_raven_len*4+2? 
     elif args.rl_style = "maddpg":
-        # To be implemented
+        ram = Buffer(1000)   
+        maddpg = Trainer(style_raven_len*4+2, style_raven_len, 1, ram)
     alpha_1=0.1
 
     if args.rl_style=="dqn":
