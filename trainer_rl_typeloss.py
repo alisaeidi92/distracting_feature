@@ -294,7 +294,7 @@ def main(args):
             a = ddpg.get_exploration_action(cur_state,alpha_1)
         elif args.rl_style == "maddpg":
             for agent_id, agent in enumerate(agents):
-                a = agent.select_action(s[agent_id], noise, epsilon)
+                a = agent.select_action(cur_state[agent_id], noise, epsilon)
 
         if alpha_1<1:
             alpha_1+=0.005#0.1
