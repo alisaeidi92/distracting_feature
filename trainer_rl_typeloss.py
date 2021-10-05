@@ -284,7 +284,7 @@ def main(args):
         baseline_rl=70                                          ##baseline for accuracy
         reward=np.mean(acc_part_val)*100-baseline_rl          ##calculating reward using val accuracy
         tb.scalar_summary("valreward", reward,epoch_count)        ##saving summary
-        action_list=[x for x in a]
+        action_list=[x for x in action_]
         cur_state=np.array(acc_part_val+acc_part_train+action_list+mean_loss_train ##saving all calc in currnt state
                            +[loss_train]+[epoch_count]).astype(np.float32)
         #np.expand_dims(, axis=0)
