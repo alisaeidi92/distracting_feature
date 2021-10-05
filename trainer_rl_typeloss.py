@@ -159,12 +159,18 @@ def main(args):
     elif args.rl_style == "maddpg":
         noise   = 0.1
         epsilon = 0.1
-        for agent_id, agent in enumerate(agents):
-            action_ = agent.select_action(s[agent_id], noise, epsilon)
     if args.type_loss:loss_fn=nn.BCELoss()                      ##Creates a criterion that measures the Binary Cross Entropy between the target and the output.
     best_acc=0.0                                                ##setting accuracy to 0.0
     while True:                                                ##loop(train)  until
         since=time.time()
+        
+        if args.rl_style == "maddpg":
+            for agent_id, agent in enumerate(agents):
+                action_ = agent.select_action(s[agent_id], noise, epsilon)
+                
+        noise = max(0.05, noise - 0.0000005)
+        epsilon = max(0.05, epsilon - 0.0000005)           
+        
         print(action_)                                            
         for i in range(style_raven_len):                
             tb.scalar_summary("action/a"+str(i), action_[i], epoch_count) ##saving summary such as poch counts and actions
