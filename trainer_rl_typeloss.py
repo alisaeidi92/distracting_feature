@@ -157,10 +157,12 @@ def main(args):
     elif args.rl_style=="ddpg":
         action_ = ddpg.get_exploration_action(np.zeros([style_raven_len*4+2]).astype(np.float32),alpha_1) ##calling exploration which returns action? 
     elif args.rl_style == "maddpg":
-        action_ = maddpg.get_exploration_action(np.zeros([style_raven_len*4+2]).astype(np.float32),alpha_1)
+        noise   = 0.1
+        epsilon = 0.1
+        for agent_id, agent in enumerate(agents):
+            action_ = agent.select_action(s[agent_id], noise, epsilon)
     if args.type_loss:loss_fn=nn.BCELoss()                      ##Creates a criterion that measures the Binary Cross Entropy between the target and the output.
     best_acc=0.0                                                ##setting accuracy to 0.0
-    self.epsilon = 0.1
     while True:                                                ##loop(train)  until
         since=time.time()
         print(action_)                                            
