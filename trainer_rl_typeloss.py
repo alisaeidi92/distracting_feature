@@ -14,6 +14,7 @@ from rl.help_function import *                   ##using rl folder
 from rl.qlearning import *                       ##using rl folder
 import utils                                   ##for image summary
 from tensorboard import TensorBoard
+from rl.Agent import Agent
 
 ##Class labels: Different categories(actions) (logic combn of class) of training sample in the dataset ex: fig1. "position and" 
 code = ['shape', 'line', "color", 'number', 'position', 'size',                  
@@ -146,7 +147,8 @@ def main(args):
         ram = MemoryBuffer(1000)   
         ddpg = Trainer(style_raven_len*4+2, style_raven_len, 1, ram)        ##creating an instance of Trainer class defined  in rl folder (ddpg.py) why style_raven_len*4+2? 
     elif args.rl_style = "maddpg":
-        ram = Buffer(1000)   
+        ram = Buffer(1000)
+        agents = maddpg._init_agents()
         maddpg = Trainer(style_raven_len*4+2, style_raven_len, 1, ram)
     alpha_1=0.1
 
