@@ -155,7 +155,7 @@ def main(args):
     elif args.rl_style=="ddpg":
         action_ = ddpg.get_exploration_action(np.zeros([style_raven_len*4+2]).astype(np.float32),alpha_1) ##calling exploration which returns action? 
     elif args.rl_style == "maddpg":
-        action_ = agent.select_action(s[agent_id], noise, epsilon)
+        action_ = maddpg.get_exploration_action(np.zeros([style_raven_len*4+2]).astype(np.float32),alpha_1)
     if args.type_loss:loss_fn=nn.BCELoss()                      ##Creates a criterion that measures the Binary Cross Entropy between the target and the output.
     best_acc=0.0                                                ##setting accuracy to 0.0
     while True:                                                ##loop(train)  until
@@ -273,7 +273,7 @@ def main(args):
         reward=np.mean(acc_part_val)*100-baseline_rl          ##calculating reward using val accuracy
         tb.scalar_summary("valreward", reward,epoch_count)        ##saving summary
         action_list=[x for x in a]
-        cur_state=np.array(acc_part_val+acc_part_train+action_list+mean_loss_train ##saving all calc in currnt state
+        cur_'=np.array(acc_part_val+acc_part_train+action_list+mean_loss_train ##saving all calc in currnt state
                            +[loss_train]+[epoch_count]).astype(np.float32)
         #np.expand_dims(, axis=0)
         if args.rl_style == "dqn":
