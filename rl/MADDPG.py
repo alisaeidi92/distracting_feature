@@ -175,7 +175,25 @@ class Buffer:
             idx = idx[0]
         return idx
     
+class OrnsteinUhlenbeckActionNoise:
 
+	def __init__(self, action_dim, mu = 0, theta = 0.15, sigma = 0.2):
+		self.action_dim = action_dim
+		self.mu = mu
+		self.theta = theta
+		self.sigma = sigma
+		self.X = np.ones(self.action_dim) * self.mu
+
+	def reset(self):
+		self.X = np.ones(self.action_dim) * self.mu
+
+	def sample(self):
+		dx = self.theta * (self.mu - self.X)
+		dx = dx + self.sigma * np.random.randn(len(self.X))
+		self.X = self.X + dx
+		return self.X
+	
+	
 class MADDPG:
 	
     def __init__(self, state_dim, action_dim, action_lim, ram, agent_id):  # 因为不同的agent的obs、act维度可能不一样，所以神经网络不同,需要agent_id来区分
@@ -185,6 +203,7 @@ class MADDPG:
 	self.ram = ram
         self.agent_id = agent_id
         self.train_step = 0
+	self.noise = OrnsteinUhlenbeckActionNoise(self.action_dim)
 
         # create the network
         self.actor_network = Actor(self.state_dim, self.action_dim, self.action_lim, agent_id)
