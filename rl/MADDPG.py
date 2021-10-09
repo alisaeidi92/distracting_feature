@@ -250,12 +250,6 @@ class MADDPG:
         for target_param, param in zip(self.critic_target_network.parameters(), self.critic_network.parameters()):
             target_param.data.copy_((1 - self.args.tau) * target_param.data + self.args.tau * param.data)
 	
-    def _init_agents(self):
-        agents = []
-        for i in range(self.args.n_agents):
-            agent = Agent(i, self.args)
-            agents.append(agent)
-        return agents
     """
     def get_exploitation_action(self, state,alpha_1):
 	
