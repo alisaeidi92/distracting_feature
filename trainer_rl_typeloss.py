@@ -319,7 +319,7 @@ def main(args):
             elif args.rl_style == "maddpg":
                 losses = []
                 transitions = Buffer.sample(args.batch_size)
-                for agent in self.agents:
+                for agent in agents:
                     other_agents = agents.copy()
                     other_agents.remove(agent)
                     loss_actor, loss_critic = agent.optimize(transitions, other_agents)
