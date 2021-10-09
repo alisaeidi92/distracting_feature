@@ -44,10 +44,10 @@ def weights_init(m):
         m.bias.data = torch.ones(m.bias.data.size())
 
         
-def _init_agents(self):
+def _init_agents(state_dim, action_dim, action_lim, ram):
         agents = []
         for i in range(args.n_agents):
-            agent = Agent(i, style_raven_len*4+2, style_raven_len, 1, ram)
+            agent = Agent(i, state_dim, action_dim, action_lim, ram)
             agents.append(agent)
         return agents
 
@@ -157,7 +157,7 @@ def main(args):
         ddpg = Trainer(style_raven_len*4+2, style_raven_len, 1, ram)        ##creating an instance of Trainer class defined  in rl folder (ddpg.py) why style_raven_len*4+2? 
     elif args.rl_style = "maddpg":
         ram = Buffer(1000)
-        agents = _init_agents()
+        agents = _init_agents(style_raven_len*4+2, style_raven_len, 1, ram)
     alpha_1=0.1
 
     if args.rl_style=="dqn":
