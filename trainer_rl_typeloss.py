@@ -43,6 +43,14 @@ def weights_init(m):
         m.weight.data.normal_(0, 0.01)
         m.bias.data = torch.ones(m.bias.data.size())
 
+        
+def _init_agents(self):
+        agents = []
+        for i in range(self.args.n_agents):
+            agent = Agent(i, self.args)
+            agents.append(agent)
+        return agents
+
 ##function to save the state of model after training on one batch
 def save_state(state, path):              
     os.makedirs(os.path.dirname(path), exist_ok=True)
