@@ -157,7 +157,7 @@ def main(args):
         ddpg = Trainer(style_raven_len*4+2, style_raven_len, 1, ram)        ##creating an instance of Trainer class defined  in rl folder (ddpg.py) why style_raven_len*4+2? 
     elif args.rl_style = "maddpg":
         ram = Buffer(1000)
-        agents = maddpg._init_agents()
+        agents = _init_agents()
         maddpg = Trainer(style_raven_len*4+2, style_raven_len, 1, ram)
     alpha_1=0.1
 
