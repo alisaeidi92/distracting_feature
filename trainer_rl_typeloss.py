@@ -46,7 +46,7 @@ def weights_init(m):
         
 def _init_agents(self):
         agents = []
-        for i in range(self.args.n_agents):
+        for i in range(args.n_agents):
             agent = Agent(i, style_raven_len*4+2, style_raven_len, 1, ram)
             agents.append(agent)
         return agents
