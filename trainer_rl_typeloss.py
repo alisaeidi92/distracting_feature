@@ -47,7 +47,7 @@ def weights_init(m):
 def _init_agents(self):
         agents = []
         for i in range(self.args.n_agents):
-            agent = Agent(i, self.args)
+            agent = Agent(i, style_raven_len*4+2, style_raven_len, 1, ram)
             agents.append(agent)
         return agents
 
@@ -158,7 +158,6 @@ def main(args):
     elif args.rl_style = "maddpg":
         ram = Buffer(1000)
         agents = _init_agents()
-        maddpg = Trainer(style_raven_len*4+2, style_raven_len, 1, ram)
     alpha_1=0.1
 
     if args.rl_style=="dqn":
