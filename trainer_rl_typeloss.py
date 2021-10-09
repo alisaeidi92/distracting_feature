@@ -322,7 +322,7 @@ def main(args):
                 for agent in agents:
                     other_agents = agents.copy()
                     other_agents.remove(agent)
-                    loss_actor, loss_critic = agent.optimize(transitions, other_agents)
+                    loss_actor, loss_critic = agent.learn(transitions, other_agents)
                     losses.append([loss_actor, loss_critic])
                 
             print('------------------------------------')
