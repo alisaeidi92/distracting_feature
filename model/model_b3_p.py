@@ -121,12 +121,12 @@ class Reab3p16(nn.Module):
     # outputs row, col, and other triplets that don't include an answer panel
     # objs: context panels
     def panel_comp_obj_pairs(self, objs, batch_size):
-        obj_pairses_r = torch.zeros(batch_size, 2, 256 * 3).cuda()
-        obj_pairses_c = torch.zeros(batch_size, 2, 256 * 3).cuda()
-        obj_pairses = torch.zeros(batch_size, 54, 256 * 3).cuda()
-        # obj_pairses_r = torch.zeros(batch_size, 2, 256 * 3)
-        # obj_pairses_c = torch.zeros(batch_size, 2, 256 * 3)
-        # obj_pairses = torch.zeros(batch_size, 54, 256 * 3)
+        # obj_pairses_r = torch.zeros(batch_size, 2, 256 * 3).cuda()
+        # obj_pairses_c = torch.zeros(batch_size, 2, 256 * 3).cuda()
+        # obj_pairses = torch.zeros(batch_size, 54, 256 * 3).cuda()
+        obj_pairses_r = torch.zeros(batch_size, 2, 256 * 3)
+        obj_pairses_c = torch.zeros(batch_size, 2, 256 * 3)
+        obj_pairses = torch.zeros(batch_size, 54, 256 * 3)
 
         count=0
         index=0
@@ -158,12 +158,12 @@ class Reab3p16(nn.Module):
     # ans: answer panel embedding
     # pan: embeddings of context panels
     def ans_comp_obj_pairs(self, ans, pan, batch_size):
-        obj_pairses_r = torch.zeros(batch_size, 1, 256 * 3).cuda()
-        obj_pairses_c = torch.zeros(batch_size, 1, 256 * 3).cuda()
-        obj_pairses = torch.zeros(batch_size, 26, 256 * 3).cuda()
-        # obj_pairses_r = torch.zeros(batch_size, 2, 256 * 3)
-        # obj_pairses_c = torch.zeros(batch_size, 2, 256 * 3)
-        # obj_pairses = torch.zeros(batch_size, 54, 256 * 3)
+        # obj_pairses_r = torch.zeros(batch_size, 1, 256 * 3).cuda()
+        # obj_pairses_c = torch.zeros(batch_size, 1, 256 * 3).cuda()
+        # obj_pairses = torch.zeros(batch_size, 26, 256 * 3).cuda()
+        obj_pairses_r = torch.zeros(batch_size, 1, 256 * 3)
+        obj_pairses_c = torch.zeros(batch_size, 1, 256 * 3)
+        obj_pairses = torch.zeros(batch_size, 26, 256 * 3)
 
         count=0
         for i in range(8):
@@ -230,8 +230,8 @@ class Reab3p16(nn.Module):
         batch_size = x.shape[0]
 
         # placeholder for panel embeddings
-        panel_embeddings = torch.zeros(batch_size, self.NUM_PANELS, 256).cuda()
-        # panel_embeddings = torch.zeros(batch_size, self.NUM_PANELS, 256)
+        # panel_embeddings = torch.zeros(batch_size, self.NUM_PANELS, 256).cuda()
+        panel_embeddings = torch.zeros(batch_size, self.NUM_PANELS, 256)
 
         # an embedding of all panels (the yellow embedding in the diagram)
         panel_embedding_8 = self.cnn_global(x[:, :, :, :])
@@ -266,13 +266,13 @@ class Reab3p16(nn.Module):
         context_g_out = context_g_out1 + context_g_outc + context_g_outr
 
         # placeholder for f-scores
-        f_out = torch.zeros(batch_size, int(self.NUM_PANELS/2)).cuda()
-        # f_out = torch.zeros(batch_size, int(self.NUM_PANELS/2))
+        # f_out = torch.zeros(batch_size, int(self.NUM_PANELS/2)).cuda()
+        f_out = torch.zeros(batch_size, int(self.NUM_PANELS/2))
 
         # placeholder for type loss
         if self.type_loss:
-            f_meta=torch.zeros(batch_size, 512).cuda()
-            # f_meta=torch.zeros(batch_size, 512)
+            # f_meta=torch.zeros(batch_size, 512).cuda()
+            f_meta=torch.zeros(batch_size, 512)
 
         for answer_ind in range(8):
             # get individual answer panel embedding
@@ -305,6 +305,7 @@ class Reab3p16(nn.Module):
             f_out[:, answer_ind] = self.f(g_out).squeeze()
 
         # output the softmax of the f-scores (and type-loss if asked)
+        print('Reab3p16 output:', F.log_softmax(f_out, dim=1))
         if self.type_loss:
             return F.log_softmax(f_out, dim=1),F.sigmoid(self.meta_fc(f_meta))
         else:

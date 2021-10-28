@@ -2,13 +2,15 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
+from .VisionTransformer import VisionTransformer
+
 class MyTransformer(nn.Module):
     def __init__(self, args):
         super(MyTransformer, self).__init__()
         self.NUM_PANELS = 16
         self.type_loss = args.type_loss
 
-        print('________ running my transformer _________-')
+        # print('________ running my transformer _________-')
 
         # to convert individual panels into embeddings
         self.transformer = VisionTransformer(
@@ -21,6 +23,31 @@ class MyTransformer(nn.Module):
             mlp_dim = 2048,
             dropout = 0.1,
             channels = 32
+        )
+
+        self.test_transformer = VisionTransformer(
+            image_size = 160,
+            patch_size = 20,     
+            # num_classes = 2592,
+            num_classes = 384,
+            dim = 1024,       
+            depth = 6, 
+            heads = 3, 
+            mlp_dim = 2048,
+            dropout = 0.1,
+            channels = 1  
+        )
+
+        self.transformer_global =  VisionTransformer(
+            image_size = 160,
+            patch_size = 20,     
+            num_classes = 256,
+            dim = 1024,       
+            depth = 6, 
+            heads = 3, 
+            mlp_dim = 2048,
+            dropout = 0.1,
+            channels = 16   
         )
 
 
@@ -57,7 +84,8 @@ class MyTransformer(nn.Module):
         )
 
         # used to get embedding of individual panels
-        self.pre_g_fc = nn.Linear(32 * 9 ** 2, 256)         # (in_features, out_features)
+        # self.pre_g_fc = nn.Linear(32 * 9 ** 2, 256)         # (in_features, out_features)
+        self.pre_g_fc = nn.Linear(32 * 12, 256)
         self.pre_g_batch_norm = nn.BatchNorm1d(256)
 
         # used to get the embedding of all context panels combined
@@ -120,16 +148,31 @@ class MyTransformer(nn.Module):
                 nn.Linear(256, 9)
             )
 
+    # given a panel, returns a panel embedding
+    def comp_panel_embedding(self, panel):
+        batch_size = panel.shape[0]
+        panel = torch.unsqueeze(panel, 1)  # (batch_size, 160, 160) -> (batch_size, 1, 160, 160)
+        # print('panel shape before cnn:', panel.shape)
+        # panel_embedding = self.cnn(panel)  # (batch_size, 1, 160, 160) -> (batch_size, 32, 9, 9)
+        panel_embedding = self.test_transformer(panel)
+        # print('panel embedding shape after cnn:', panel_embedding.shape)
+        panel_embedding = panel_embedding.view(batch_size, -1)
+        # print(panel_embedding.shape)
+        panel_embedding = self.pre_g_fc(panel_embedding)
+        panel_embedding = self.pre_g_batch_norm(panel_embedding)
+        panel_embedding = F.relu(panel_embedding)
+        # print(panel_embedding.shape)
+        return panel_embedding
 
     # outputs row, col, and other triplets that don't include an answer panel
     # objs: context panels
     def panel_comp_obj_pairs(self, objs, batch_size):
-        obj_pairses_r = torch.zeros(batch_size, 2, 256 * 3).cuda()
-        obj_pairses_c = torch.zeros(batch_size, 2, 256 * 3).cuda()
-        obj_pairses = torch.zeros(batch_size, 54, 256 * 3).cuda()
-        # obj_pairses_r = torch.zeros(batch_size, 2, 256 * 3)
-        # obj_pairses_c = torch.zeros(batch_size, 2, 256 * 3)
-        # obj_pairses = torch.zeros(batch_size, 54, 256 * 3)
+        # obj_pairses_r = torch.zeros(batch_size, 2, 256 * 3).cuda()
+        # obj_pairses_c = torch.zeros(batch_size, 2, 256 * 3).cuda()
+        # obj_pairses = torch.zeros(batch_size, 54, 256 * 3).cuda()
+        obj_pairses_r = torch.zeros(batch_size, 2, 256 * 3)
+        obj_pairses_c = torch.zeros(batch_size, 2, 256 * 3)
+        obj_pairses = torch.zeros(batch_size, 54, 256 * 3)
 
         count=0
         index=0
@@ -161,12 +204,12 @@ class MyTransformer(nn.Module):
     # ans: answer panel embedding
     # pan: embeddings of context panels
     def ans_comp_obj_pairs(self, ans, pan, batch_size):
-        obj_pairses_r = torch.zeros(batch_size, 1, 256 * 3).cuda()
-        obj_pairses_c = torch.zeros(batch_size, 1, 256 * 3).cuda()
-        obj_pairses = torch.zeros(batch_size, 26, 256 * 3).cuda()
-        # obj_pairses_r = torch.zeros(batch_size, 1, 256 * 3)
-        # obj_pairses_c = torch.zeros(batch_size, 1, 256 * 3)
-        # obj_pairses = torch.zeros(batch_size, 26, 256 * 3)
+        # obj_pairses_r = torch.zeros(batch_size, 1, 256 * 3).cuda()
+        # obj_pairses_c = torch.zeros(batch_size, 1, 256 * 3).cuda()
+        # obj_pairses = torch.zeros(batch_size, 26, 256 * 3).cuda()
+        obj_pairses_r = torch.zeros(batch_size, 1, 256 * 3)
+        obj_pairses_c = torch.zeros(batch_size, 1, 256 * 3)
+        obj_pairses = torch.zeros(batch_size, 26, 256 * 3)
 
         count=0
         for i in range(8):
@@ -229,13 +272,15 @@ class MyTransformer(nn.Module):
         10: output softmax of f-score, and type loss
         """
 
+        # x.shape is [32, 16, 160, 160]
+
         batch_size = x.shape[0]
 
-        # print('((((((((( x.shape:', x.shape)
-
         # placeholder for panel embeddings
-        panel_embeddings = torch.zeros(batch_size, self.NUM_PANELS, 256).cuda()
-        # panel_embeddings = torch.zeros(batch_size, self.NUM_PANELS, 256)
+        # panel_embeddings = torch.zeros(batch_size, self.NUM_PANELS, 256).cuda()
+        panel_embeddings = torch.zeros(batch_size, self.NUM_PANELS, 256)
+
+        # print('x.shape:', x.shape)
 
         # an embedding of all panels (the yellow embedding in the diagram)
         panel_embedding_8 = self.cnn_global(x[:, :, :, :])
@@ -243,15 +288,23 @@ class MyTransformer(nn.Module):
         panel_embedding_8 = self.pre_g_batch_norm2(panel_embedding_8)
         panel_embedding_8 = F.relu(panel_embedding_8)
         panel_embedding_8 = torch.unsqueeze(panel_embedding_8, 1)
+        # print('panel_embedding_8.shape', panel_embedding_8.shape)
+
+        # panel_embedding_8 = self.transformer_global(x)
+        # shape = (panel_embedding_8.shape[0], 1, panel_embedding_8.shape[1])     # (32, 1, 256)
+        # panel_embedding_8 = torch.reshape(panel_embedding_8, shape)
 
         # get panel embeddings for all panels (8 context panels, 8 answer panels)
         for panel_ind in range(self.NUM_PANELS):
             panel = x[:, panel_ind, :, :]
             # print('--- panel.shape', panel.shape)
-            panel = panel[None, :, :, :]
+            # panel = panel[None, :, :, :]
             # print('--- panel.shape', panel.shape)
-            panel_embedding = self.transformer(panel)
+            # panel_embedding = self.transformer(panel)
+            # print('panel embedding shape:', panel_embedding.shape)
+            panel_embedding = self.comp_panel_embedding(panel)
             panel_embeddings[:, panel_ind, :] = panel_embedding
+
         context_embeddings = panel_embeddings[:, :int(self.NUM_PANELS/2), :] # (batch_size, 8, 256)
         answer_embeddings = panel_embeddings[:, int(self.NUM_PANELS/2):, :] # (batch_size, 8, 256)
 
@@ -272,13 +325,13 @@ class MyTransformer(nn.Module):
         context_g_out = context_g_out1 + context_g_outc + context_g_outr
 
         # placeholder for f-scores
-        f_out = torch.zeros(batch_size, int(self.NUM_PANELS/2)).cuda()
-        # f_out = torch.zeros(batch_size, int(self.NUM_PANELS/2))
+        # f_out = torch.zeros(batch_size, int(self.NUM_PANELS/2)).cuda()
+        f_out = torch.zeros(batch_size, int(self.NUM_PANELS/2))
 
         # placeholder for type loss
         if self.type_loss:
-            f_meta=torch.zeros(batch_size, 512).cuda()
-            # f_meta=torch.zeros(batch_size, 512)
+            # f_meta=torch.zeros(batch_size, 512).cuda()
+            f_meta=torch.zeros(batch_size, 512)
 
         for answer_ind in range(8):
             # get individual answer panel embedding
@@ -309,150 +362,10 @@ class MyTransformer(nn.Module):
             # get f-score
             f_out[:, answer_ind] = self.f(g_out).squeeze()
             # print('---****** f_out.shape:',f_out.shape)
-
+        
+        # print('model output shape:', f_out.shape)
         # output the softmax of the f-scores (and type-loss if asked)
         if self.type_loss:
             return F.log_softmax(f_out, dim=1),F.sigmoid(self.meta_fc(f_meta))
         else:
             return F.log_softmax(f_out, dim=1)
-
-
-# the code below is a py-torch implementation of a Vision transformer
-
-import torch
-from torch import nn, einsum
-import torch.nn.functional as F
-
-from einops import rearrange, repeat
-from einops.layers.torch import Rearrange
-
-# helpers
-
-def pair(t):
-    return t if isinstance(t, tuple) else (t, t)
-
-# classes
-
-class PreNorm(nn.Module):
-    def __init__(self, dim, fn):
-        super().__init__()
-        self.norm = nn.LayerNorm(dim)
-        self.fn = fn
-    def forward(self, x, **kwargs):
-        return self.fn(self.norm(x), **kwargs)
-
-class FeedForward(nn.Module):
-    def __init__(self, dim, hidden_dim, dropout = 0.):
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(dim, hidden_dim),
-            nn.GELU(),
-            nn.Dropout(dropout),
-            nn.Linear(hidden_dim, dim),
-            nn.Dropout(dropout)
-        )
-    def forward(self, x):
-        return self.net(x)
-
-class Attention(nn.Module):
-    def __init__(self, dim, heads = 8, dim_head = 64, dropout = 0.):
-        super().__init__()
-        inner_dim = dim_head *  heads
-        project_out = not (heads == 1 and dim_head == dim)
-
-        self.heads = heads
-        self.scale = dim_head ** -0.5
-
-        self.attend = nn.Softmax(dim = -1)
-        self.to_qkv = nn.Linear(dim, inner_dim * 3, bias = False)
-
-        self.to_out = nn.Sequential(
-            nn.Linear(inner_dim, dim),
-            nn.Dropout(dropout)
-        ) if project_out else nn.Identity()
-
-    def forward(self, x):
-        b, n, _, h = *x.shape, self.heads
-        qkv = self.to_qkv(x).chunk(3, dim = -1)
-        q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h = h), qkv)
-
-        dots = einsum('b h i d, b h j d -> b h i j', q, k) * self.scale
-
-        attn = self.attend(dots)
-
-        out = einsum('b h i j, b h j d -> b h i d', attn, v)
-        out = rearrange(out, 'b h n d -> b n (h d)')
-        return self.to_out(out)
-
-class Transformer(nn.Module):
-    def __init__(self, dim, depth, heads, dim_head, mlp_dim, dropout = 0.):
-        super().__init__()
-        self.layers = nn.ModuleList([])
-        for _ in range(depth):
-            self.layers.append(nn.ModuleList([
-                PreNorm(dim, Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
-                PreNorm(dim, FeedForward(dim, mlp_dim, dropout = dropout))
-            ]))
-    def forward(self, x):
-        for attn, ff in self.layers:
-            x = attn(x) + x
-            x = ff(x) + x
-        return x
-
-class VisionTransformer(nn.Module):
-    def __init__(self, *, image_size, patch_size, num_classes, dim, depth, heads, mlp_dim, pool = 'cls', channels = 3, dim_head = 64, dropout = 0., emb_dropout = 0.):
-        super().__init__()
-        image_height, image_width = pair(image_size)
-        patch_height, patch_width = pair(patch_size)
-
-        print('patch_height:', patch_height)
-        print('patch_width:', patch_width)
-        print('patch_size:', patch_size)
-        print('image dims:',image_height, '-', image_width)
-        print()
-
-        assert image_height % patch_height == 0 and image_width % patch_width == 0, 'Image dimensions must be divisible by the patch size.'
-
-        num_patches = (image_height // patch_height) * (image_width // patch_width)
-        patch_dim = channels * patch_height * patch_width
-        print('--patch_dim', patch_dim)
-        # patch_dim = patch_dim * 2
-
-
-        assert pool in {'cls', 'mean'}, 'pool type must be either cls (cls token) or mean (mean pooling)'
-
-        self.to_patch_embedding = nn.Sequential(
-            Rearrange('b c (h p1) (w p2) -> b (h w) (p1 p2 c)', p1 = patch_height, p2 = patch_width),
-            nn.Linear(patch_dim, dim),
-        )
-
-        self.pos_embedding = nn.Parameter(torch.randn(1, num_patches + 1, dim))
-        self.cls_token = nn.Parameter(torch.randn(1, 1, dim))
-        self.dropout = nn.Dropout(emb_dropout)
-
-        self.transformer = Transformer(dim, depth, heads, dim_head, mlp_dim, dropout)
-
-        self.pool = pool
-        self.to_latent = nn.Identity()
-
-        self.mlp_head = nn.Sequential(
-            nn.LayerNorm(dim),
-            nn.Linear(dim, num_classes)
-        )
-
-    def forward(self, img):
-        # print('----img shape:', img.shape)
-        x = self.to_patch_embedding(img)
-        b, n, _ = x.shape
-
-        cls_tokens = repeat(self.cls_token, '() n d -> b n d', b = b)
-        x = torch.cat((cls_tokens, x), dim=1)
-        x += self.pos_embedding[:, :(n + 1)]
-        x = self.dropout(x)
-
-        x = self.transformer(x)
-
-        x = x.mean(dim = 1) if self.pool == 'mean' else x[:, 0]
-
-        x = self.to_latent(x)
-        return self.mlp_head(x)
