@@ -148,7 +148,7 @@ def main(args):
 
 ##A very popular technique that is used along with SGD is called Momentum. Instead of using only the gradient of the current 
 ##step to guide the search, momentum also accumulates the gradient of the past steps to determine the direction to go
-    # model.cuda()
+    model.cuda()
     optimizer = optim.SGD(model.parameters(), lr=args.lr,momentum=args.mo, weight_decay=5e-4) ##Adam has convergence problems that often SGD + momentum can converge better                                              ##with longer training time. We often see a lot of papers in 2018 and 2019 were still using SGD
     
     
@@ -203,8 +203,8 @@ def main(args):
             if x.shape[0]<10:                             ##x.shape[0] will give the number of rows in an array  (10 by 1024 2D array)                 
                 print(x.shape[0])
                 break                                                            
-            # x, y ,meta = Variable(x).cuda(), Variable(y).cuda(), Variable(me).cuda()  ##Components are accessible as variable.x,  variable.y,  variable.z
-            x, y, meta = Variable(x), Variable(y), Variable(me)
+            x, y ,meta = Variable(x).cuda(), Variable(y).cuda(), Variable(me).cuda()  ##Components are accessible as variable.x,  variable.y,  variable.z
+            # x, y, meta = Variable(x), Variable(y), Variable(me)
 
             if(x.shape[0] != args.batch_size):
             #     print('In training:\n doesn\'t match batch_size')
@@ -286,8 +286,8 @@ def main(args):
                     continue
 
                 iter_test+=1
-                # x, y = Variable(x).cuda(), Variable(y).cuda()
-                x, y = Variable(x), Variable(y)
+                x, y = Variable(x).cuda(), Variable(y).cuda()
+                # x, y = Variable(x), Variable(y)
                 #pred,_ = model(x)
                 pred = model(x)
                 pred = pred.data.max(1)[1]
