@@ -3,11 +3,9 @@ import torch.nn.functional as F
 from torch import nn
 
 from .VisionTransformer import Transformer, VisionTransformer
-
-# using library
-from vit_pytorch.efficient import ViT
-from x_transformers import Encoder
+from .EfficientVisionTransformer import EfficientVisionTransformer
 from linformer import Linformer
+
 
 class MyTransformer(nn.Module):
     def __init__(self, args):
@@ -18,17 +16,17 @@ class MyTransformer(nn.Module):
         # print('________ running my transformer _________-')
 
         # to convert individual panels into embeddings
-        # self.transformer = VisionTransformer(
-        #     image_size = 160,
-        #     patch_size = 20,
-        #     num_classes = 256,     # size of the panel embeddings
-        #     dim = 1024,
-        #     depth = 6,
-        #     heads = 3,
-        #     mlp_dim = 2048,
-        #     dropout = 0.1,
-        #     channels = 32
-        # )
+        self.transformer = VisionTransformer(
+            image_size = 160,
+            patch_size = 20,
+            num_classes = 384,     # size of the panel embeddings
+            dim = 1024,
+            depth = 6,
+            heads = 3,
+            mlp_dim = 2048,
+            dropout = 0.1,
+            channels = 1
+        )
 
 
         # # used for getting fit-score for individual panels
@@ -47,36 +45,6 @@ class MyTransformer(nn.Module):
         #     nn.Linear(64, 1)
         # )
 
-
-
-        self.test_transformer = VisionTransformer(
-            image_size = 160,
-            patch_size = 20,     
-            # num_classes = 2592,
-            num_classes = 384,
-            dim = 1024,       
-            depth = 6, 
-            heads = 3, 
-            mlp_dim = 2048,
-            dropout = 0.1,
-            channels = 1  
-        )
-
-        # self.test_transformer_using_lib = ViT(
-        #     dim = 512,
-        #     image_size = 160,
-        #     patch_size = 16,
-        #     num_classes = 32 * 9 ** 2,
-        #     channels = 1,
-        #     transformer = Encoder(
-        #         dim = 512,
-        #         depth = 12,
-        #         heads = 8,
-        #         ff_glu = True,
-        #         residual_attn = True
-        #     )
-        # )
-
         efficient_transformer = Linformer(
             dim=128,
             seq_len=64+1,  # 8x8 patches + 1 cls-token
@@ -84,7 +52,7 @@ class MyTransformer(nn.Module):
             heads=8,
             k=64
         )
-        self.test_transformer_using_lib = ViT(
+        self.test_transformer_using_lib = EfficientVisionTransformer(
             dim = 128,
             image_size = 160,
             patch_size = 20,
@@ -92,19 +60,6 @@ class MyTransformer(nn.Module):
             transformer = efficient_transformer,
             channels = 1
         )
-
-        # self.transformer_global =  VisionTransformer(
-        #     image_size = 160,
-        #     patch_size = 20,     
-        #     num_classes = 256,
-        #     dim = 1024,       
-        #     depth = 6, 
-        #     heads = 3, 
-        #     mlp_dim = 2048,
-        #     dropout = 0.1,
-        #     channels = 16   
-        # )
-
 
         # used to get embedding of individual panels
         self.cnn = nn.Sequential(
@@ -139,8 +94,8 @@ class MyTransformer(nn.Module):
         )
 
         # used to get embedding of individual panels
-        self.pre_g_fc = nn.Linear(32 * 9 ** 2, 256)         # (in_features, out_features)
-        # self.pre_g_fc = nn.Linear(32 * 12, 256)
+        # self.pre_g_fc = nn.Linear(32 * 9 ** 2, 256)         # (in_features, out_features)
+        self.pre_g_fc = nn.Linear(32 * 12, 256)
         self.pre_g_batch_norm = nn.BatchNorm1d(256)
 
         # used to get the embedding of all context panels combined
@@ -210,12 +165,14 @@ class MyTransformer(nn.Module):
 
 
         # print('panel shape before cnn:', panel.shape)
-        panel_embedding = self.cnn(panel)  # (batch_size, 1, 160, 160) -> (batch_size, 32, 9, 9)
-        panel_embedding = panel_embedding.view(batch_size, -1)
+        # panel_embedding = self.cnn(panel)  # (batch_size, 1, 160, 160) -> (batch_size, 32, 9, 9)
+        # panel_embedding = panel_embedding.view(batch_size, -1)
         # print('panel embedding shape after cnn:', panel_embedding.shape)
 
 
-        # panel_embedding = self.test_transformer(panel)
+        # print('panel shape:', panel.shape)
+        panel_embedding = self.test_transformer_using_lib(panel)
+        # print('panel embedding shape:', panel_embedding.shape)
 
         # print('panel shape:', panel.shape)
         # panel_embedding = self.test_transformer_using_lib(panel)
@@ -408,17 +365,25 @@ class MyTransformer(nn.Module):
 
         # print('x.shape:', x.shape)
 
+        # x shape: [32, 16, 160, 160]
+        # print('x shape:', x.shape)
         # an embedding of all panels (the yellow embedding in the diagram)
         panel_embedding_8 = self.cnn_global(x[:, :, :, :])
+
+        # panel_embedding_8 = self.transformer_global(x)
+        # panel_embedding_8 = panel_embedding_8.view([batch_size, 32, 9, 9])
+
+        # print('panel_embedding shape after transformer:', panel_embedding_8.shape)
         panel_embedding_8 = self.pre_g_fc2(panel_embedding_8.view(batch_size, -1))
         panel_embedding_8 = self.pre_g_batch_norm2(panel_embedding_8)
         panel_embedding_8 = F.relu(panel_embedding_8)
         panel_embedding_8 = torch.unsqueeze(panel_embedding_8, 1)
-        # print('panel_embedding_8.shape', panel_embedding_8.shape)
+        # panel_embedding_8 shape: [32, 1, 256]
+        # print('panel embedding 8.shape:', panel_embedding_8.shape)
+
 
         # panel_embedding_8 = self.transformer_global(x)
-        # shape = (panel_embedding_8.shape[0], 1, panel_embedding_8.shape[1])     # (32, 1, 256)
-        # panel_embedding_8 = torch.reshape(panel_embedding_8, shape)
+        # panel_embedding_8 = panel_embedding_8[:, None, :]
 
         # get panel embeddings for all panels (8 context panels, 8 answer panels)
         for panel_ind in range(self.NUM_PANELS):
