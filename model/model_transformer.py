@@ -13,38 +13,6 @@ class MyTransformer(nn.Module):
         self.NUM_PANELS = 16
         self.type_loss = args.type_loss
 
-        # print('________ running my transformer _________-')
-
-        # to convert individual panels into embeddings
-        self.transformer = VisionTransformer(
-            image_size = 160,
-            patch_size = 20,
-            num_classes = 384,     # size of the panel embeddings
-            dim = 1024,
-            depth = 6,
-            heads = 3,
-            mlp_dim = 2048,
-            dropout = 0.1,
-            channels = 1
-        )
-
-
-        # # used for getting fit-score for individual panels
-        # self.transformer = VisionTransformer(
-        #     image_size = 480,
-        #     patch_size = 16,
-        #     num_classes = 64,
-        #     dim = 256,
-        #     depth = 6,
-        #     heads = 3,
-        #     mlp_dim = 128,
-        #     dropout = 0.1,
-        #     channels = 1
-        # )
-        # self.transformer_linear = nn.Sequential(
-        #     nn.Linear(64, 1)
-        # )
-
         efficient_transformer = Linformer(
             dim=128,
             seq_len=64+1,  # 8x8 patches + 1 cls-token
@@ -56,7 +24,8 @@ class MyTransformer(nn.Module):
             dim = 128,
             image_size = 160,
             patch_size = 20,
-            num_classes = 384,
+            # num_classes = 384,
+            num_classes = 300,
             transformer = efficient_transformer,
             channels = 1
         )
@@ -95,7 +64,8 @@ class MyTransformer(nn.Module):
 
         # used to get embedding of individual panels
         # self.pre_g_fc = nn.Linear(32 * 9 ** 2, 256)         # (in_features, out_features)
-        self.pre_g_fc = nn.Linear(32 * 12, 256)
+        # self.pre_g_fc = nn.Linear(32 * 12, 256)
+        self.pre_g_fc = nn.Linear(300, 256)
         self.pre_g_batch_norm = nn.BatchNorm1d(256)
 
         # used to get the embedding of all context panels combined
@@ -163,20 +133,10 @@ class MyTransformer(nn.Module):
         batch_size = panel.shape[0]
         panel = torch.unsqueeze(panel, 1)  # (batch_size, 160, 160) -> (batch_size, 1, 160, 160)
 
-
-        # print('panel shape before cnn:', panel.shape)
         # panel_embedding = self.cnn(panel)  # (batch_size, 1, 160, 160) -> (batch_size, 32, 9, 9)
         # panel_embedding = panel_embedding.view(batch_size, -1)
-        # print('panel embedding shape after cnn:', panel_embedding.shape)
 
-
-        # print('panel shape:', panel.shape)
         panel_embedding = self.test_transformer_using_lib(panel)
-        # print('panel embedding shape:', panel_embedding.shape)
-
-        # print('panel shape:', panel.shape)
-        # panel_embedding = self.test_transformer_using_lib(panel)
-
 
         panel_embedding = self.pre_g_fc(panel_embedding)
         panel_embedding = self.pre_g_batch_norm(panel_embedding)
@@ -296,68 +256,6 @@ class MyTransformer(nn.Module):
         # x if of type torch.Tensor
 
         batch_size = x.shape[0]
-
-        # # create a new batch
-        # new_x = torch.zeros(batch_size, 8, 480, 480).cuda()
-        # # new_x = torch.zeros(batch_size, 8, 480, 480)
-        # for batch_num in range(batch_size):
-        #     batch = x[batch_num]
-        #     context_panels = batch[:8]
-        #     choice_panels = batch[8:]
-
-        #     # combine the images into 1 complete image for each choice panel
-        #     first_row = [context_panels[0], context_panels[1], context_panels[2]]
-        #     second_row = [context_panels[3], context_panels[4], context_panels[5]]
-        #     third_row = [context_panels[6], context_panels[7]]
-        #     row_1 = torch.cat(first_row, dim=1)
-        #     row_2 = torch.cat(second_row, dim=1)
-        #     row_3 = torch.cat(third_row, dim=1)
-
-        #     # new_batch = []
-        #     for i in range(8):
-        #         choice_panel = choice_panels[i]
-        #         new_row_3 = torch.cat([row_3, choice_panel], dim=1)
-        #         complete_image = torch.cat([row_1, row_2, new_row_3], dim=0)
-        #         # new_batch.append(torch.tensor(complete_image))
-        #         new_x[batch_num, i] = complete_image
-
-        # #     new_batch = torch.stack(new_batch)
-        # #     new_x.append(new_batch)
-        # # new_x = torch.stack(new_x)
-        # # print('-----done creating complete images')
-
-        # # create predcitions for each image individually
-        # batch_size = new_x.shape[0]
-        # outputs = torch.zeros(batch_size, 8).cuda()
-        # for i in range(batch_size):
-        #     example = new_x[i]
-        #     for j in range(8):
-        #         image = example[j]
-        #         image = image[None, None, :, :]
-        #         pred = self.transformer(image)
-        #         pred = self.transformer_linear(pred)
-        #         outputs[i, j] = pred
-
-
-        # # # create predictions for each answer panel by batch
-        # # outputs = torch.zeros(batch_size, 8).cuda()
-        # # # outputs = torch.zeros(batch_size, 8)
-        # # for answer_ind in range(8):
-        # #     image = new_x[:, answer_ind, :, :]
-        # #     image = image[:, None, :, :]
-        # #     pred = self.transformer(image)
-        # #     pred = self.transformer_linear(pred)
-        # #     outputs[:, answer_ind] = pred.squeeze()
-        # #     # print(outputs)
-
-
-        # # output = self.transformer(new_x)
-        # # output = self.transformer_linear(output)
-        
-        # return F.log_softmax(outputs, dim=1)
-
-
-        # print('((((((((( x.shape:', x.shape)
 
         # placeholder for panel embeddings
         panel_embeddings = torch.zeros(batch_size, self.NUM_PANELS, 256).cuda()

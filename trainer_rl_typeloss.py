@@ -206,11 +206,11 @@ def main(args):
             x, y ,meta = Variable(x).cuda(), Variable(y).cuda(), Variable(me).cuda()  ##Components are accessible as variable.x,  variable.y,  variable.z
             # x, y, meta = Variable(x), Variable(y), Variable(me)
 
-            if(x.shape[0] != args.batch_size):
+            # if(x.shape[0] != args.batch_size):
             #     print('In training:\n doesn\'t match batch_size')
             #     print('x.shape:',x.shape)
             #     print('batch_size:', args.batch_size)
-                continue
+                # continue
             
             
             #if args.gpunum > 1:                                          
@@ -279,11 +279,11 @@ def main(args):
             acc_part_val = np.zeros([style_raven_len, 2]).astype(np.float32)
             for x, y, style,me in val_loader:             ##using validation data
 
-                if(x.shape[0] != args.batch_size):
+                # if(x.shape[0] != args.batch_size):
                     # print('In validatioin:\n doesn\'t match batch_size')
                     # print('x.shape:',x.shape)
                     # print('batch_size:', args.batch_size)
-                    continue
+                    # continue
 
                 iter_test+=1
                 x, y = Variable(x).cuda(), Variable(y).cuda()
