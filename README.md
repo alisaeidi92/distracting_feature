@@ -24,6 +24,7 @@ This project explores the use of machine learning to solve visual IQ tests such 
 * Python 3.6.6
 * PyTorch
 * CUDA and cuDNN
+
 Create a virtual environment and install libraries listed in requirements.txt
 
 
