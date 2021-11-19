@@ -1,24 +1,11 @@
-# Abstract Reasoning with Distracting Features
+# Machine Learning Based Abstract Reasoning Applied to Visual IQ Tests
 
-To appear in NeurIPS 2019. 
-
-[Abstract Reasoning with Distracting Features](http://arxiv.org/abs/1912.00569)
-
-(Kecheng Zheng, Wei Wei and Zheng-jun Zha, 2019)
+This project explores the use of machine learning to solve visual IQ tests such as [Raven's Progressive Matrices](https://en.wikipedia.org/wiki/Raven%27s_Progressive_Matrices). The underlying code we've used for this project is from the following research paper: [Abstract Reasoning with Distracting Features](http://arxiv.org/abs/1912.00569). Along with further testing and validation of the results and methods of the research paper, we have added more features (GUI) as well as potential methods of improvements (Vision Transformer, MADDPG).
 
 
 <div width="20%", height="20%", align="center">
    <img src="https://github.com/zkcys001/distracting_feature/blob/master/git_images/LEN.png"><br><br>
 </div>
-
-
-# Dataset
-
-To download the dataset, please check [chizhang's project page](http://wellyzhang.github.io/project/raven.html#dataset).
-
-# Performance
-
-For details, please check our [paper](http://arxiv.org/abs/1912.00569).
 
 
 # Dependencies
@@ -37,13 +24,7 @@ For details, please check our [paper](http://arxiv.org/abs/1912.00569).
 python main.py --net <model name> --datapath <path to the dataset> --rl False --typeloss False
 ```
 
-#TODO
-1. The code for PGM dataset
-2. The long-term features (state) in teacher model 
-
 # Citation
-
-If you find the paper and/or the code helpful, please cite us.
 
 ```
 @inproceedings{zheng2019abstract,
@@ -60,10 +41,3 @@ If you find the paper and/or the code helpful, please cite us.
 * [Wild Relational Network](https://github.com/Fen9/WReN)
 
 
-## Contact 
-
-Please feel free to discuss paper/code through issues or emails.
-
-
-### License 
-[Apache License 2.0](./LICENSE)
