@@ -8,7 +8,11 @@ Sonam Welekar
 
 This project explores the use of machine learning to solve visual IQ tests such as [Raven's Progressive Matrices](https://en.wikipedia.org/wiki/Raven%27s_Progressive_Matrices). The underlying code we've used for this project is from the following research paper: [Abstract Reasoning with Distracting Features](http://arxiv.org/abs/1912.00569). Along with further testing and validation of the results and methods of the research paper, we have added more features (GUI) as well as potential methods of improvements (Vision Transformer, MADDPG).
 
-# TODO: INSERT IMAGE OF GUI
+
+<div width="20%", height="20%", align="center">
+   <img src="https://raw.githubusercontent.com/alisaeidi92/distracting_feature/master/GUI_screenshot.png"><br><br>
+</div>
+
 
 ## GitHub Branches
 - master: contains the code to run the CNN student model with DDPG teacher model
