@@ -79,7 +79,7 @@ def run_inference(data_dir, data_split, filename):
     
     weights_path = "C:\\Users\\Hertz\\Documents\\SJSU Coursework\\MS Project_big files\\git\\distracting_feature\\distracting_feature\\epochs\\epoch860" # got ~20 percent here. 
     
-    weights_path = "C:\\Users\\Hertz\\Documents\\SJSU Coursework\\MS Project_big files\\git\\distracting_feature\\distracting_feature\\epochs\\epochbest(73.6)"
+    weights_path = "C:\\Users\\Hertz\\Documents\\SJSU Coursework\\MS Project_big files\\git\\distracting_feature\\distracting_feature\\epochs\\epochbest(200K_79.2)"
     
     #model_path = "C:\\Users\\Hertz\\Documents\\SJSU Coursework\\MS Project_big files\\git\\distracting_feature\\distracting_feature\\epochs\\epoch860" # got ~70 percent here. 
 
